@@ -104,27 +104,6 @@ class OA_LexerMaps
 		':' => OA_LexerNames::kColon,
 	);
 	
-	// Since the regex matching is very expensive and in the critical path, it is split up based on first-characters.
-	// In the future, it might be faster to just hand-code the lexing of these cases but using a declarative
-	//  representation such as a regular expression is a cleaner approach.
-	public static $atRegexMap = array(
-		'~@[a-zA-Z_][a-zA-Z0-9_]*~A' => OA_LexerNames::kSilentIdentifier,
-	);
-	public static $letterRegexMap = array(
-		'~[a-zA-Z_][a-zA-Z0-9_]*~A' => OA_LexerNames::kIdentifier,
-	);
-	public static $whiteRegexMap = array(
-		'~[ \t]+~A' => OA_LexerNames::kWhiteSpace,
-	);
-	public static $dollarRegexMap = array(
-		'~\$[a-zA-Z_][a-zA-Z0-9_]*~A' => OA_LexerNames::kVariable,
-	);
-	public static $numberRegexMap = array(
-		'~[0-9]+\.[0-9]*~A' => OA_LexerNames::kFloatConst,
-		'~[0-9]+~A' => OA_LexerNames::kIntConst,
-	);
-	
-	
 	// This comparator function is used to sort the keyword map so it is provided here.
 	// When used with a usort, this function will sort the keywords from longest to shortest.
 	public static function lengthSort($a, $b)

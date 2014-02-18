@@ -118,22 +118,30 @@ class OA_PhpCompiler
 		// Start the preprocessor.
 		$preprocessor = new OA_Preprocessor($this->options->preprocessorIncludePathsArray, $this->options->preprocessorIgnoredFileNameArray);
 		$startLines = $preprocessor->start($inputFilePath);
-		// Writing to an internal buffer uses more memory but is faster than making lots of fwrites so we will batch the
-		//  calls.
-		$buffer = '';
-		foreach ($startLines as $line)
+		$preError = $preprocessor->getError();
+		if (null === $preError)
 		{
-			$buffer .= $line;
+			// Writing to an internal buffer uses more memory but is faster than making lots of fwrites so we will batch
+			//  the calls.
+			$buffer = '';
+			foreach ($startLines as $line)
+			{
+				$buffer .= $line;
+			}
+			fwrite($stream, $buffer);
+			$this->_compilePhp($stream, $preprocessor);
+			$buffer = '';
+			$endLines = $preprocessor->end();
+			foreach ($endLines as $line)
+			{
+				$buffer .= $line;
+			}
+			fwrite($stream, $buffer);
 		}
-		fwrite($stream, $buffer);
-		$this->_compilePhp($stream, $preprocessor);
-		$buffer = '';
-		$endLines = $preprocessor->end();
-		foreach ($endLines as $line)
+		else
 		{
-			$buffer .= $line;
+			error_log($preError);
 		}
-		fwrite($stream, $buffer);
 		
 		if (STDOUT !== $stream)
 		{
@@ -174,6 +182,12 @@ class OA_PhpCompiler
 			$buffer .= $line;
 		}
 		fwrite($stream, $buffer);
+		// Handle any preprocessor error.
+		$preError = $preprocessor->getError();
+		if (null !== $preError)
+		{
+			error_log($preError);
+		}
 	}
 	
 	public function _strip($stream, $lexer)

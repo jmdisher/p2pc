@@ -63,8 +63,8 @@ class OA_Lexer
 		
 		// Prime the buffer.
 		$this->buffer = $this->preprocessor->getLine();
-		// Set the error to null.
-		$this->error = null;
+		// We want to set the error to null or whatever the preprocessor had during this call.
+		$this->error = $this->preprocessor->getError();
 	}
 	
 	// Returns the next OA_LexerToken instance in the stream or null, if there aren't any.
@@ -75,6 +75,8 @@ class OA_Lexer
 		if ('' === $this->buffer)
 		{
 			$this->buffer = $this->preprocessor->getLine();
+			// If the preprocessor went into an error state, we want to inherit it.
+			$this->error = $this->preprocessor->getError();
 		}
 		// If the buffer is valid, proceed.
 		if (null !== $this->buffer)
@@ -109,8 +111,16 @@ class OA_Lexer
 					}
 					else
 					{
-						// We fell off the end of the input.
-						$this->error = 'End of input while searching for comment end';
+						$preError = $this->preprocessor->getError();
+						if (null !== $preError)
+						{
+							$this->error = $preError;
+						}
+						else
+						{
+							// We fell off the end of the input.
+							$this->error = 'End of input while searching for comment end';
+						}
 					}
 				}
 				// See if we succeeded.
@@ -187,10 +197,10 @@ class OA_Lexer
 		switch ($prefix)
 		{
 			case '@':
-				list($tokenName, $length) = $this->_matchRegex(OA_LexerMaps::$atRegexMap);
+				list($tokenName, $length) = $this->_parseIdentifier(OA_LexerNames::kSilentIdentifier, 1);
 			break;
 			case '$':
-				list($tokenName, $length) = $this->_matchRegex(OA_LexerMaps::$dollarRegexMap);
+				list($tokenName, $length) = $this->_parseIdentifier(OA_LexerNames::kVariable, 1);
 			break;
 			case '\'':
 				list($tokenName, $length) = $this->_matchQuotedString(OA_LexerNames::kSingleQuoteString);
@@ -200,35 +210,17 @@ class OA_Lexer
 			break;
 			case ' ':
 			case "\t":
-				list($tokenName, $length) = $this->_matchRegex(OA_LexerMaps::$whiteRegexMap);
+				list($tokenName, $length) = $this->_matchWhitespace(OA_LexerNames::kWhiteSpace);
 			break;
 			default:
 				if (('_' === $prefix) || ctype_alpha($prefix))
 				{
-					list($tokenName, $length) = $this->_matchRegex(OA_LexerMaps::$letterRegexMap);
+				list($tokenName, $length) = $this->_parseIdentifier(OA_LexerNames::kIdentifier, 0);
 				}
 				else if (ctype_digit($prefix))
 				{
-					list($tokenName, $length) = $this->_matchRegex(OA_LexerMaps::$numberRegexMap);
+					list($tokenName, $length) = $this->_matchNumber();
 				}
-		}
-		return array($tokenName, $length);
-	}
-	
-	private function _matchRegex($regexMap)
-	{
-		$tokenName = null;
-		$length = 0;
-		foreach ($regexMap as $regex => $token)
-		{
-			$matches = null;
-			$oneOnMatch = preg_match($regex, $this->buffer, $matches, null, $offset);
-			if (1 === $oneOnMatch)
-			{
-				$length = strlen($matches[0]);
-				$tokenName = $token;
-				break;
-			}
 		}
 		return array($tokenName, $length);
 	}
@@ -295,6 +287,111 @@ class OA_Lexer
 		else
 		{
 			$this->error = 'Reached end of line while reading string constant';
+		}
+		return array($token, $length);
+	}
+	
+	private function _parseIdentifier($tokenName, $startIndex)
+	{
+		$i = $startIndex;
+		$firstMiss = null;
+		$limit = strlen($this->buffer);
+		while (($i < $limit) && (null === $firstMiss))
+		{
+			$char = $this->buffer[$i];
+			if (('_' === $char) || ctype_alnum($char))
+			{
+				$i += 1;
+			}
+			else
+			{
+				$firstMiss = $i;
+			}
+		}
+		
+		$token = null;
+		$length = null;
+		if ($firstMiss !== $startIndex)
+		{
+			$token = $tokenName;
+			$length = $firstMiss;
+		}
+		else
+		{
+			$this->error = 'Expected identifier but found empty';
+		}
+		return array($token, $length);
+	}
+	
+	private function _matchWhitespace($tokenName)
+	{
+		$i = 1;
+		$firstMiss = null;
+		$limit = strlen($this->buffer);
+		while (($i < $limit) && (null === $firstMiss))
+		{
+			$char = $this->buffer[$i];
+			if ((' ' === $char) || ("\t" === $char))
+			{
+				$i += 1;
+			}
+			else
+			{
+				$firstMiss = $i;
+			}
+		}
+		
+		if (null === $firstMiss)
+		{
+			$firstMiss = $limit;
+		}
+		$token = $tokenName;
+		$length = $firstMiss;
+		return array($token, $length);
+	}
+	
+	private function _matchNumber()
+	{
+		$i = 1;
+		$firstMiss = null;
+		$isFloat = false;
+		$didError = false;
+		$limit = strlen($this->buffer);
+		while (($i < $limit) && (null === $firstMiss) && !$didError)
+		{
+			$char = $this->buffer[$i];
+			if (ctype_digit($char))
+			{
+				$i += 1;
+			}
+			else if ('.' === $char)
+			{
+				if (!$isFloat)
+				{
+					$isFloat = true;
+				}
+				else
+				{
+					$didError = true;
+				}
+				$i += 1;
+			}
+			else
+			{
+				$firstMiss = $i;
+			}
+		}
+		
+		$token = null;
+		$length = null;
+		if (!$didError)
+		{
+			$token = ($isFloat ? OA_LexerNames::kFloatConst : OA_LexerNames::kIntConst);
+			$length = $firstMiss;
+		}
+		else
+		{
+			$this->error = 'Number had multiple decimal points';
 		}
 		return array($token, $length);
 	}

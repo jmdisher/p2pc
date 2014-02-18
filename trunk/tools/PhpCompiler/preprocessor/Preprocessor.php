@@ -40,6 +40,7 @@ class OA_Preprocessor
 	private $alreadyReferencedFileNamesArray;
 	private $postLines;
 	private $lineStack;
+	private $error;
 	
 	
 	// Creates the compiler instance, configured with the given arguments.  It can be re-run multiple times on new files with the same configuration.
@@ -69,13 +70,18 @@ class OA_Preprocessor
 		$this->lineStack = array();
 		$this->startingDirectory = dirname($realInputPath);
 		
+		$toReturn = null;
 		list($preLines, $lines, $this->postLines) = $this->_loadFile($realInputPath);
-		// Process these lines until we find one containing only the PHP start.
-		if (count($lines) > 0)
+		if (null === $this->error)
 		{
-			array_push($this->lineStack, $lines);
+			// Process these lines until we find one containing only the PHP start.
+			if (count($lines) > 0)
+			{
+				array_push($this->lineStack, $lines);
+			}
+			$toReturn = $preLines;
 		}
-		return $preLines;
+		return $toReturn;
 	}
 	
 	// Returns the next line in the input, returning null on error, end-of-file, or encountering PHP end in the initial
@@ -85,7 +91,7 @@ class OA_Preprocessor
 		$line = $this->_fetchNextLine();
 		$lineToSet = null;
 		
-		while ((null !== $line) && (null === $lineToSet))
+		while ((null === $this->error) && (null !== $line) && (null === $lineToSet))
 		{
 			// If this is a require_once line, we need to process it to see if the file should be inlined, ignored, or
 			//  processed as PHP code.
@@ -115,10 +121,13 @@ class OA_Preprocessor
 							// We did find the file, we haven't yet included it, and it isn't in our ignored list so we can
 							//  try to inline it.
 							list($preLines, $lines, $postLines) = $this->_loadFile($subFilePath);
-							if (count($lines) > 0)
+							if (null === $this->errror)
 							{
-								// Push this on the stack and then loop so it is pulled off in the next run.
-								array_push($this->lineStack, $lines);
+								if (count($lines) > 0)
+								{
+									// Push this on the stack and then loop so it is pulled off in the next run.
+									array_push($this->lineStack, $lines);
+								}
 							}
 						}
 					}
@@ -158,6 +167,11 @@ class OA_Preprocessor
 	public function end()
 	{
 		return $this->postLines;
+	}
+	
+	public function getError()
+	{
+		return $this->error;
 	}
 	
 	
@@ -225,8 +239,14 @@ class OA_Preprocessor
 				$postLines[] = $line;
 			}
 		}
-		assert(1 === $startCount);
-		assert(1 === $endCount);
+		if (1 !== $startCount)
+		{
+			$this->error = "\"$realPath\" - Expected 1 PHP start but found $startCount";
+		}
+		if (1 !== $endCount)
+		{
+			$this->error = "\"$realPath\" - Expected 1 PHP end but found $endCount";
+		}
 		return array($preLines, $phpLines, $postLines);
 	}
 	

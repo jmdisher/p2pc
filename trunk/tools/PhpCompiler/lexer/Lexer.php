@@ -193,10 +193,10 @@ class OA_Lexer
 				list($tokenName, $length) = $this->_matchRegex(OA_LexerMaps::$dollarRegexMap);
 			break;
 			case '\'':
-				list($tokenName, $length) = $this->_matchRegex(OA_LexerMaps::$singleRegexMap);
+				list($tokenName, $length) = $this->_matchQuotedString(OA_LexerNames::kSingleQuoteString);
 			break;
 			case '"':
-				list($tokenName, $length) = $this->_matchRegex(OA_LexerMaps::$doubleRegexMap);
+				list($tokenName, $length) = $this->_matchQuotedString(OA_LexerNames::kDoubleQuoteString);
 			break;
 			case ' ':
 			case "\t":
@@ -256,6 +256,45 @@ class OA_Lexer
 				$token = OA_LexerMaps::$keywordMap[$keyword];
 				break;
 			}
+		}
+		return array($token, $length);
+	}
+	
+	private function _matchQuotedString($tokenName)
+	{
+		$quote = $this->buffer[0];
+		$i = 1;
+		$endMatch = 0;
+		$limit = strlen($this->buffer);
+		$isEscape = false;
+		while (($i < $limit) && (0 === $endMatch))
+		{
+			$char = $this->buffer[$i];
+			if ('\\' === $char)
+			{
+				$isEscape = !$isEscape;
+			}
+			else
+			{
+				if (!$isEscape && ($quote === $char))
+				{
+					$endMatch = $i;
+				}
+				$isEscape = false;
+			}
+			$i += 1;
+		}
+		
+		$token = null;
+		$length = null;
+		if (0 !== $endMatch)
+		{
+			$token = $tokenName;
+			$length = $endMatch + 1;
+		}
+		else
+		{
+			$this->error = 'Reached end of line while reading string constant';
 		}
 		return array($token, $length);
 	}

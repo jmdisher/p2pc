@@ -217,7 +217,7 @@ class OA_Preprocessor
 				}
 				else
 				{
-					$phpLines[] = str_replace('__FILE__', "'$realPath'", $line);
+					$phpLines[] = $line;
 				}
 			}
 			else

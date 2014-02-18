@@ -123,12 +123,6 @@ class OA_LexerMaps
 		'~[0-9]+\.[0-9]*~A' => OA_LexerNames::kFloatConst,
 		'~[0-9]+~A' => OA_LexerNames::kIntConst,
 	);
-	public static $singleRegexMap = array(
-		'~\'([^\']|\\\')*\'~A' => OA_LexerNames::kSingleQuoteString,
-	);
-	public static $doubleRegexMap = array(
-		'~"([^"]|\\")*"~A' => OA_LexerNames::kDoubleQuoteString,
-	);
 	
 	
 	// This comparator function is used to sort the keyword map so it is provided here.

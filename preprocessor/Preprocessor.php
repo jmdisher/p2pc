@@ -151,6 +151,7 @@ class OA_Preprocessor
 				$line = $this->_fetchNextLine();
 			}
 		}
+		assert(false !== $lineToSet);
 		return $lineToSet;
 	}
 	

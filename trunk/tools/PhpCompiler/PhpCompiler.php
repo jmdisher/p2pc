@@ -73,15 +73,14 @@
 //  size and type verification, and unused or inconsistently declared variables.
 assert_options(ASSERT_BAIL, 1);
 require_once('Preprocessor.php');
+require_once('Lexer.php');
+
 
 // This class only has a public constructor and one public method "compile" so using it is relatively straight-forward.
 // In the future, it might be further extended to be more of a "compiler" than a "preprocessor" (which is a more appropriate name, for now).
 class OA_PhpCompiler
 {
-	// An array of include paths to use when resolving a given require_once directive.
-	private $includePathArray;
-	// An array of file names which, when encountered as a require_once, should be ignored (that is, consume the require_once but don't process it).  These are generally files which include information which is either unused or incorrect once compiled (typically include path manipulation).
-	private $ignoredFileNameArray;
+	private $options;
 	// The array of full paths to the already-included files.
 	private $alreadyIncludedPathArray;
 	// The array of file names which we have already referenced as an external require_once.
@@ -95,12 +94,7 @@ class OA_PhpCompiler
 	public function __construct($options)
 	{
 		assert($options instanceof OA_CompilerOptions);
-		// This cannot be used this way.
-		assert(null !== $options->preprocessorIncludePathsArray);
-		// This cannot be used this way.
-		assert(null !== $options->preprocessorIgnoredFileNameArray);
-		$this->includePathArray = $options->preprocessorIncludePathsArray;
-		$this->ignoredFileNameArray = $options->preprocessorIgnoredFileNameArray;
+		$this->options = $options;
 	}
 	
 	// Runs the compiler, with its constant configuration, on $inputFilePath, output written to $outputFileName.  This function leaves the receiver an a consistent state to be run again.
@@ -122,7 +116,7 @@ class OA_PhpCompiler
 		}
 		
 		// Start the preprocessor.
-		$preprocessor = new OA_Preprocessor($this->includePathArray, $this->ignoredFileNameArray);
+		$preprocessor = new OA_Preprocessor($this->options->preprocessorIncludePathsArray, $this->options->preprocessorIgnoredFileNameArray);
 		$startLines = $preprocessor->start($inputFilePath);
 		// Writing to an internal buffer uses more memory but is faster than making lots of fwrites so we will batch the
 		//  calls.
@@ -132,12 +126,7 @@ class OA_PhpCompiler
 			$buffer .= $line;
 		}
 		fwrite($stream, $buffer);
-		$buffer = '';
-		while (null !== ($line = $preprocessor->getLine()))
-		{
-			$buffer .= $line;
-		}
-		fwrite($stream, $buffer);
+		$this->_compilePhp($stream, $preprocessor);
 		$buffer = '';
 		$endLines = $preprocessor->end();
 		foreach ($endLines as $line)
@@ -154,6 +143,104 @@ class OA_PhpCompiler
 			$didRename = rename($tempName, $outputFileName);
 			// This error is unrecoverable.
 			assert($didRename);
+		}
+	}
+	
+	private function _compilePhp($stream, $preprocessor)
+	{
+		if ($this->options->preprocessOnly)
+		{
+			$this->_drainPreprocessor($stream, $preprocessor);
+		}
+		else if ($this->options->stripOnly)
+		{
+			assert(!$this->options->testLexer);
+			$lexer = new OA_Lexer($preprocessor);
+			$this->_strip($stream, $lexer);
+		}
+		else
+		{
+			assert($this->options->testLexer);
+			$lexer = new OA_Lexer($preprocessor);
+			$this->_testLexer($stream, $lexer);
+		}
+	}
+	
+	private function _drainPreprocessor($stream, $preprocessor)
+	{
+		$buffer = '';
+		while (null !== ($line = $preprocessor->getLine()))
+		{
+			$buffer .= $line;
+		}
+		fwrite($stream, $buffer);
+	}
+	
+	public function _strip($stream, $lexer)
+	{
+		$buffer = '';
+		// We always start on a new line.
+		$previousWasNewLine = true;
+		while (null !== ($token = $lexer->getNextToken()))
+		{
+			$name = $token->getName();
+			switch ($name)
+			{
+				case OA_LexerNames::kSingleComment:
+				case OA_LexerNames::kMultiComment:
+				case OA_LexerNames::kWhiteSpace:
+					// Strip all whitespace and comments.
+				break;
+				case OA_LexerNames::kNewLine:
+					// Only output stand-alone new lines.
+					if (!$previousWasNewLine)
+					{
+						$buffer .= "\n";
+					}
+					$previousWasNewLine = true;
+				break;
+				default:
+					if (!$previousWasNewLine)
+					{
+						$buffer .= ' ';
+					}
+					$buffer .= $token->getText();
+					$previousWasNewLine = false;
+			}
+		}
+		if (!$previousWasNewLine)
+		{
+			$buffer .= "\n";
+		}
+		fwrite($stream, $buffer);
+		$error = $lexer->getError();
+		if (null !== $error)
+		{
+			error_log($error);
+		}
+	}
+	
+	public function _testLexer($stream, $lexer)
+	{
+		$buffer = '';
+		while (null !== ($token = $lexer->getNextToken()))
+		{
+			$name = $token->getName();
+			if (OA_LexerNames::kNewLine === $name)
+			{
+				$buffer .= "\n";
+			}
+			else
+			{
+				$buffer .= " $name";
+			}
+		}
+		$buffer .= "\n";
+		fwrite($stream, $buffer);
+		$error = $lexer->getError();
+		if (null !== $error)
+		{
+			error_log($error);
 		}
 	}
 }

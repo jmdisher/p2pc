@@ -30,14 +30,33 @@
 //  disable stable options or enable experimental/speculative ones on a case-by-case basis.
 class OA_CompilerOptions
 {
+	// An array of include paths to use when resolving a given require_once directive.
 	public $preprocessorIncludePathsArray;
+	// An array of file names which, when encountered as a require_once, should be ignored (that is, consume the
+	//  require_once but don't process it).  These are generally files which include information which is either unused
+	//  or incorrect once compiled (typically include path manipulation).
 	public $preprocessorIgnoredFileNameArray;
+	// True if only the preprocessor should be run.  This effectively inlines all require_once calls into the resultant
+	//  output file.  Note that this provides a substantial performance improvement (especially obvious with APC enabled
+	//  since it avoids consulting the include path for each require_once on each call).
+	public $preprocessOnly;
+	// True if only the preprocessor and lexer should be engaged to inline the require_once calls, strip comments and
+	//  whitespace.  This won't change the code in any substantial way and takes about 10* as long as preprocessOnly.
+	//  It is probably only useful for creating minimally-sized packages for distribution.
+	public $stripOnly;
+	// Only useful for testing the lexer as this does NOT generate a PHP program.  Instead, the names of the tokens
+	//  lexed are output where the program would normally go.
+	public $testLexer;
+	
 	
 	public function __construct()
 	{
 		// Default values.
 		$this->preprocessorIncludePathsArray = array();
 		$this->preprocessorIgnoredFileNameArray = array();
+		$this->preprocessOnly = false;
+		$this->stripOnly = true;
+		$this->testLexer = false;
 	}
 }
 

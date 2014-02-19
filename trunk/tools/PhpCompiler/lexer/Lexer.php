@@ -81,53 +81,62 @@ class OA_Lexer
 		// If the buffer is valid, proceed.
 		if (null !== $this->buffer)
 		{
-			// Handle the comment special-cases.
-			if (0 === strpos($this->buffer, '//$'))
+			$prefix = $this->buffer[0];
+			if ('/' === $prefix)
 			{
-				// "special" comments - these are set up as special so that they can be left in the output stream since
-				//  other tools often want to sniff for information in comments which we don't want to remove them.
-				// Consume everything except for the final character (the new line).
-				$bufferLength = strlen($this->buffer);
-				$token = $this->_advanceBufferAndCreate(OA_LexerNames::kSpecialComment, $bufferLength - 1);
-			}
-			else if (0 === strpos($this->buffer, '//'))
-			{
-				// Single-line comment.
-				// Consume everything except for the final character (the new line).
-				$bufferLength = strlen($this->buffer);
-				$token = $this->_advanceBufferAndCreate(OA_LexerNames::kSingleComment, $bufferLength - 1);
-			}
-			else if (0 === strpos($this->buffer, '/*'))
-			{
-				// Multi-line comment.
-				// Keep adding lines to the buffer until we find the closing comment.
-				$commentClose = '*/';
-				while ((null === $this->error) && (false === strpos($this->buffer, $commentClose)))
+				// Handle the comment special-cases.
+				if (0 === strpos($this->buffer, '//$'))
 				{
-					$line = $this->preprocessor->getLine();
-					if (null !== $line)
+					// "special" comments - these are set up as special so that they can be left in the output stream since
+					//  other tools often want to sniff for information in comments which we don't want to remove them.
+					// Consume everything except for the final character (the new line).
+					$bufferLength = strlen($this->buffer);
+					$token = $this->_advanceBufferAndCreate(OA_LexerNames::kSpecialComment, $bufferLength - 1);
+				}
+				else if (0 === strpos($this->buffer, '//'))
+				{
+					// Single-line comment.
+					// Consume everything except for the final character (the new line).
+					$bufferLength = strlen($this->buffer);
+					$token = $this->_advanceBufferAndCreate(OA_LexerNames::kSingleComment, $bufferLength - 1);
+				}
+				else if (0 === strpos($this->buffer, '/*'))
+				{
+					// Multi-line comment.
+					// Keep adding lines to the buffer until we find the closing comment.
+					$commentClose = '*/';
+					while ((null === $this->error) && (false === strpos($this->buffer, $commentClose)))
 					{
-						$this->buffer .= $line;
-					}
-					else
-					{
-						$preError = $this->preprocessor->getError();
-						if (null !== $preError)
+						$line = $this->preprocessor->getLine();
+						if (null !== $line)
 						{
-							$this->error = $preError;
+							$this->buffer .= $line;
 						}
 						else
 						{
-							// We fell off the end of the input.
-							$this->error = 'End of input while searching for comment end';
+							$preError = $this->preprocessor->getError();
+							if (null !== $preError)
+							{
+								$this->error = $preError;
+							}
+							else
+							{
+								// We fell off the end of the input.
+								$this->error = 'End of input while searching for comment end';
+							}
 						}
 					}
+					// See if we succeeded.
+					$end = strpos($this->buffer, $commentClose);
+					if (false !== $end)
+					{
+						$token = $this->_advanceBufferAndCreate(OA_LexerNames::kMultiComment, $end + strlen($commentClose));
+					}
 				}
-				// See if we succeeded.
-				$end = strpos($this->buffer, $commentClose);
-				if (false !== $end)
+				else
 				{
-					$token = $this->_advanceBufferAndCreate(OA_LexerNames::kMultiComment, $end + strlen($commentClose));
+					// This falls back to the keyword slash case.
+					$token = $this->_advanceBufferAndCreate(OA_LexerNames::kSlash, 1);
 				}
 			}
 			else
@@ -140,7 +149,36 @@ class OA_Lexer
 				//  -no match) Search for the keywords in the buffer and return them on match.
 				// This ordering is meant to ensure that things like "while" are identified as a keyword but things like
 				//  "whilenot" are not.
-				list($tokenName, $textLength) = $this->_getLongestRegexToken();
+				$tokenName = null;
+				$textLength = 0;
+				switch ($prefix)
+				{
+					case '@':
+						list($tokenName, $textLength) = $this->_parseIdentifier(OA_LexerNames::kSilentIdentifier, 1);
+					break;
+					case '$':
+						list($tokenName, $textLength) = $this->_parseIdentifier(OA_LexerNames::kVariable, 1);
+					break;
+					case '\'':
+						list($tokenName, $textLength) = $this->_matchQuotedString(OA_LexerNames::kSingleQuoteString, $prefix);
+					break;
+					case '"':
+						list($tokenName, $textLength) = $this->_matchQuotedString(OA_LexerNames::kDoubleQuoteString, $prefix);
+					break;
+					case ' ':
+					case "\t":
+						list($tokenName, $textLength) = $this->_matchWhitespace(OA_LexerNames::kWhiteSpace);
+					break;
+					default:
+						if (('_' === $prefix) || ctype_alpha($prefix))
+						{
+						list($tokenName, $textLength) = $this->_parseIdentifier(OA_LexerNames::kIdentifier, 0);
+						}
+						else if (ctype_digit($prefix))
+						{
+							list($tokenName, $textLength) = $this->_matchNumber();
+						}
+				}
 				if (null !== $tokenName)
 				{
 					$tokenName = $this->_reduceRegexToken($tokenName, $textLength);
@@ -189,42 +227,6 @@ class OA_Lexer
 		return new OA_LexerToken($tokenName, $extracted);
 	}
 	
-	private function _getLongestRegexToken()
-	{
-		$tokenName = null;
-		$length = 0;
-		$prefix = $this->buffer[0];
-		switch ($prefix)
-		{
-			case '@':
-				list($tokenName, $length) = $this->_parseIdentifier(OA_LexerNames::kSilentIdentifier, 1);
-			break;
-			case '$':
-				list($tokenName, $length) = $this->_parseIdentifier(OA_LexerNames::kVariable, 1);
-			break;
-			case '\'':
-				list($tokenName, $length) = $this->_matchQuotedString(OA_LexerNames::kSingleQuoteString);
-			break;
-			case '"':
-				list($tokenName, $length) = $this->_matchQuotedString(OA_LexerNames::kDoubleQuoteString);
-			break;
-			case ' ':
-			case "\t":
-				list($tokenName, $length) = $this->_matchWhitespace(OA_LexerNames::kWhiteSpace);
-			break;
-			default:
-				if (('_' === $prefix) || ctype_alpha($prefix))
-				{
-				list($tokenName, $length) = $this->_parseIdentifier(OA_LexerNames::kIdentifier, 0);
-				}
-				else if (ctype_digit($prefix))
-				{
-					list($tokenName, $length) = $this->_matchNumber();
-				}
-		}
-		return array($tokenName, $length);
-	}
-	
 	private function _reduceRegexToken($longestToken, $longestLength)
 	{
 		$reducedToken = $longestToken;
@@ -252,9 +254,8 @@ class OA_Lexer
 		return array($token, $length);
 	}
 	
-	private function _matchQuotedString($tokenName)
+	private function _matchQuotedString($tokenName, $quote)
 	{
-		$quote = $this->buffer[0];
 		$i = 1;
 		$endMatch = 0;
 		$limit = strlen($this->buffer);

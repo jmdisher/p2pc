@@ -74,6 +74,8 @@
 assert_options(ASSERT_BAIL, 1);
 require_once('Preprocessor.php');
 require_once('Lexer.php');
+require_once('ParserBuilder.php');
+require_once('OutputVisitor.php');
 
 
 // This class only has a public constructor and one public method "compile" so using it is relatively straight-forward.
@@ -166,6 +168,13 @@ class OA_PhpCompiler
 			$lexer = new OA_Lexer($preprocessor);
 			$this->_strip($stream, $lexer);
 		}
+		else if (null !== $this->options->parserGrammarFilePath)
+		{
+			$parser = OA_ParserBuilder::buildFromXmlFile($this->options->parserGrammarFilePath);
+			assert(null !== $parser);
+			$lexer = new OA_Lexer($preprocessor);
+			$this->_parse($stream, $lexer, $parser);
+		}
 		else
 		{
 			assert($this->options->testLexer);
@@ -190,7 +199,7 @@ class OA_PhpCompiler
 		}
 	}
 	
-	public function _strip($stream, $lexer)
+	private function _strip($stream, $lexer)
 	{
 		$buffer = '';
 		// We always start on a new line.
@@ -234,7 +243,18 @@ class OA_PhpCompiler
 		}
 	}
 	
-	public function _testLexer($stream, $lexer)
+	private function _parse($stream, $lexer, $parser)
+	{
+		$acceptedTree = $parser->parse($lexer);
+		if (null !== $acceptedTree)
+		{
+			$outputVisitor = new OA_OutputVisitor();
+			$acceptedTree->visit($outputVisitor);
+			$outputVisitor->flush($stream);
+		}
+	}
+	
+	private function _testLexer($stream, $lexer)
 	{
 		$buffer = '';
 		while (null !== ($token = $lexer->getNextToken()))

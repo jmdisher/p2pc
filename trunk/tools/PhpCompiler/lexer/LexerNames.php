@@ -32,8 +32,12 @@ class OA_LexerNames
 	const kForeach = 'FOREACH';
 	const kIf = 'IF';
 	const kElse = 'ELSE';
+	const kSwitch = 'SWITCH';
+	const kCase = 'CASE';
+	const kDefault = 'DEFAULT';
 	const kTrue = 'TRUE';
 	const kFalse = 'FALSE';
+	const kNull = 'NULL';
 	const kPrivate = 'PRIVATE';
 	const kProtected = 'PROTECTED';
 	const kPublic = 'PUBLIC';
@@ -50,6 +54,13 @@ class OA_LexerNames
 	const kNew = 'NEW';
 	const kExtends = 'EXTENDS';
 	const kImplements = 'IMPLEMENTS';
+	const kEcho = 'ECHO';
+	const kInstanceOf = 'INSTANCEOF';
+	const kFile = 'FILE';
+	const kDirectorySeparator = 'DIR_SEP';
+	const kPathSeparator = 'PATH_SEP';
+	const kAssertBail = 'ASSERT_BAIL';
+	const kStdOut = 'STDOUT';
 		
 	// Structure.
 	const kNewLine = 'NEW_LINE';

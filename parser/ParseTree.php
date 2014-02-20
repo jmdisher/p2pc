@@ -23,32 +23,38 @@
 require_once('ParsedElement.php');
 
 
-// The class representing a single token of the stream.  Instances of this object are created by the lexer and returned
-//  to the caller.
-class OA_LexerToken extends OA_ParsedElement
+// Author:  Jeff Disher (Open Autonomy Inc.)
+// The class representing a branching structure within the parse tree.  Instances of this object are created by
+//  OA_ParserRule when applying a reduction rule within OA_Parser.
+class OA_ParseTree extends OA_ParsedElement
 {
-	private $text;
+	private $children;
 	
-	// Creates a new token instance.
+	// Creates a new tree instance with no children.
 	// Args:
 	// -$name - The token type name.
-	// -$text - The textual content in the source file underlying the token.
-	public function __construct($name, $text)
+	public function __construct($name)
 	{
 		parent::__construct($name);
-		$this->text = $text;
+		$this->children = array();
 	}
 	
 	// OA_ParsedElement.
 	public function visit($visitor)
 	{
-		$visitor->visitLeaf($this);
+		$visitor->preVisitTree($this);
+		foreach ($this->children as $child)
+		{
+			$child->visit($visitor);
+		}
+		$visitor->postVisitTree($this);
 	}
 	
-	// Returns the textual content underlying the token in the original source file.
-	public function getText()
+	// Adds the given child to the end of the receiver's list of children.
+	public function addChild($child)
 	{
-		return $this->text;
+		assert($child instanceof OA_ParsedElement);
+		$this->children[] = $child;
 	}
 }
 

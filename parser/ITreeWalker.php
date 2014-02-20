@@ -20,36 +20,21 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
 */
-require_once('ParsedElement.php');
 
 
-// The class representing a single token of the stream.  Instances of this object are created by the lexer and returned
-//  to the caller.
-class OA_LexerToken extends OA_ParsedElement
+// Author:  Jeff Disher (Open Autonomy Inc.)
+// The interface which describes the callbacks which will be made when passed into the "visit" method in
+//  OA_ParsedElement.  Implementing this interface is required to inspect the parse tree.
+interface OA_ITreeWalker
 {
-	private $text;
+	// Called upon visiting a branching node structure (a parser reduction) before any of its children are visited.
+	public function preVisitTree($tree);
 	
-	// Creates a new token instance.
-	// Args:
-	// -$name - The token type name.
-	// -$text - The textual content in the source file underlying the token.
-	public function __construct($name, $text)
-	{
-		parent::__construct($name);
-		$this->text = $text;
-	}
+	// Called upon visiting a branching node structure (a parser reduction) after any of its children have been visited.
+	public function postVisitTree($tree);
 	
-	// OA_ParsedElement.
-	public function visit($visitor)
-	{
-		$visitor->visitLeaf($this);
-	}
-	
-	// Returns the textual content underlying the token in the original source file.
-	public function getText()
-	{
-		return $this->text;
-	}
+	// Called upon visiting a leaf node structure (a lexer token).
+	public function visitLeaf($leaf);
 }
 
 ?>

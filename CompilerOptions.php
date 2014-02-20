@@ -47,6 +47,8 @@ class OA_CompilerOptions
 	// Only useful for testing the lexer as this does NOT generate a PHP program.  Instead, the names of the tokens
 	//  lexed are output where the program would normally go.
 	public $testLexer;
+	// The path to the grammar XML file to use if the parser should be run.
+	public $parserGrammarFilePath;
 	
 	
 	public function __construct()
@@ -57,6 +59,7 @@ class OA_CompilerOptions
 		$this->preprocessOnly = false;
 		$this->stripOnly = true;
 		$this->testLexer = false;
+		$this->parserGrammarFilePath = null;
 	}
 }
 

@@ -27,46 +27,17 @@ require_once('ITreeWalker.php');
 // An implementation of the tree walker which exists to serialize a parse tree back into a PHP source file.  This is the
 //  end-point of any compilation operation since the source and target language are both PHP.
 // This means that the high-level structure of the parse tree nodes are ignored and only serve to direct the order of
-//  leaf node visitation (in the tree nodes, themselves).  Only the leaf nodes are directly queried for their textual
-//  representation but also their token types since care must be taken to only introduce whitespace between the nodes
-//  which would otherwise change meaning if adjacent (keywords would become identifiers, for example).  We don't want to
-//  gratuitously inject whitespace as that defeats the minification goal of the compiler but can also promote instance
-//  variables into keywords ("var", for example).
+//  leaf node visitation (in the tree nodes, themselves).  Only the leaf nodes are of interest and they are passed to
+//  the provided $outputStream for output formatting.
 class OA_OutputVisitor implements OA_ITreeWalker
 {
-	private static $spaceDelimitedTokens = array(
-		OA_LexerNames::kIdentifier,
-		OA_LexerNames::kVariable,
-		
-		OA_LexerNames::kCase,
-		OA_LexerNames::kPrivate,
-		OA_LexerNames::kProtected,
-		OA_LexerNames::kPublic,
-		OA_LexerNames::kStatic,
-		OA_LexerNames::kFunction,
-		OA_LexerNames::kClass,
-		OA_LexerNames::kAbstract,
-		OA_LexerNames::kInterface,
-		OA_LexerNames::kAs,
-		OA_LexerNames::kConst,
-		OA_LexerNames::kReturn,
-		OA_LexerNames::kArray,
-		OA_LexerNames::kNew,
-		OA_LexerNames::kExtends,
-		OA_LexerNames::kImplements,
-		OA_LexerNames::kInstanceOf,
-	);
-	
-	
-	private $buffer;
-	private $needsSpace;
+	private $outputStream;
 	
 	
 	// Creates an empty representation of the receiver.
-	public function __construct()
+	public function __construct($outputStream)
 	{
-		$this->buffer = '';
-		$this->needsSpace = false;
+		$this->outputStream = $outputStream;
 	}
 	
 	// OA_ITreeWalker.
@@ -84,44 +55,7 @@ class OA_OutputVisitor implements OA_ITreeWalker
 	// OA_ITreeWalker.
 	public function visitLeaf($leaf)
 	{
-		$leafName = $leaf->getName();
-		$leafText = $leaf->getText();
-		if (OA_LexerNames::kSpecialComment === $leafName)
-		{
-			// Special comments get passed through but put newlines around them since they are expected to be on their
-			//  own lines.
-			$this->buffer .= "\n$leafText\n";
-			$this->needsSpace = false;
-		}
-		else
-		{
-			$needsSpace = in_array($leafName, OA_OutputVisitor::$spaceDelimitedTokens);
-			if ($this->needsSpace && $needsSpace)
-			{
-				// If both this leaf and the previous leaf need space, we will add it between them.
-				$this->buffer .= ' ';
-			}
-			$this->buffer .= $leafText;
-			if (OA_LexerNames::kSemiColon === $leafName)
-			{
-				// We will drop new lines after semi-colons so that error messages provided during the run will have
-				//  some hope of being decyphered.
-				$this->buffer .= "\n";
-				$this->needsSpace = false;
-			}
-			else
-			{
-				$this->needsSpace = $needsSpace;
-			}
-		}
-	}
-	
-	// Called after the visit operation is complete to flush the visitor's internal buffer to an output stream.  Note
-	//  that the receiver's behaviour is undefined on any calls made after this one.
-	public function flush($stream)
-	{
-		fwrite($stream, $this->buffer);
-		$this->buffer = null;
+		$this->outputStream->writeToken($leaf);
 	}
 }
 

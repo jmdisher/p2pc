@@ -66,12 +66,7 @@ class OA_LexerFilter
 					case OA_LexerNames::kFile:
 					case OA_LexerNames::kDirectorySeparator:
 					case OA_LexerNames::kPathSeparator:
-						$this->nextToken = new OA_LexerToken(OA_LexerNames::kSingleQuoteString, $token->getText());
-					break;
-					// Handle the cases of special tokens which will be ints at runtime.
-					case OA_LexerNames::kAssertBail:
-					case OA_LexerNames::kStdOut:
-						$this->nextToken = new OA_LexerToken(OA_LexerNames::kIntConst, $token->getText());
+						$this->nextToken = new OA_LexerToken(OA_LexerNames::kSingleQuoteString, $token->getText(), $token->getFile(), $token->getLine());
 					break;
 					default:
 						// We use anything else.
@@ -81,7 +76,7 @@ class OA_LexerFilter
 			else
 			{
 				$this->isDone = true;
-				$this->nextToken = new OA_LexerToken('$end', '');
+				$this->nextToken = new OA_LexerToken('$end', '', '', '');
 			}
 		}
 		return $this->nextToken;

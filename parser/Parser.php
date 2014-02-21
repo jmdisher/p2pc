@@ -114,7 +114,7 @@ class OA_Parser
 				}
 				else
 				{
-					error_log("FAILURE");
+					error_log("UNEXPECTED $symbol (\"{$token->getText()}\") {$token->getFile()}:{$token->getLine()}");
 					assert(false);
 				}
 			}

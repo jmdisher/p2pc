@@ -120,8 +120,7 @@ class OA_PhpCompiler
 		
 		// Start the preprocessor.
 		$preprocessor = new OA_Preprocessor($this->options->preprocessorIncludePathsArray, $this->options->preprocessorIgnoredFileNameArray);
-		$startLines = $preprocessor->start($inputFilePath);
-		$preError = $preprocessor->getError();
+		list($startLines, $preError) = $preprocessor->start($inputFilePath);
 		if (null === $preError)
 		{
 			// Writing to an internal buffer uses more memory but is faster than making lots of fwrites so we will batch
@@ -187,16 +186,18 @@ class OA_PhpCompiler
 	private function _drainPreprocessor($stream, $preprocessor)
 	{
 		$buffer = '';
-		while (null !== ($line = $preprocessor->getLine()))
+		list($line, $fileName, $lineNumber, $error) = $preprocessor->getLine();
+		
+		while ((null !== $line) && (null === $error))
 		{
 			$buffer .= $line;
+			list($line, $fileName, $lineNumber, $error) = $preprocessor->getLine();
 		}
 		fwrite($stream, $buffer);
 		// Handle any preprocessor error.
-		$preError = $preprocessor->getError();
-		if (null !== $preError)
+		if (null !== $error)
 		{
-			error_log($preError);
+			error_log($error);
 		}
 	}
 	

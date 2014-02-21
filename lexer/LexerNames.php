@@ -59,8 +59,7 @@ class OA_LexerNames
 	const kFile = 'FILE';
 	const kDirectorySeparator = 'DIR_SEP';
 	const kPathSeparator = 'PATH_SEP';
-	const kAssertBail = 'ASSERT_BAIL';
-	const kStdOut = 'STDOUT';
+	const kGlobal = 'GLOBAL';
 		
 	// Structure.
 	const kNewLine = 'NEW_LINE';

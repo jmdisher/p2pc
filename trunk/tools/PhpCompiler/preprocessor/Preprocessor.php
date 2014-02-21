@@ -40,7 +40,13 @@ class OA_Preprocessor
 	private $alreadyReferencedFileNamesArray;
 	private $postLines;
 	private $lineStack;
+	private $fileStack;
+	private $lineNumberStack;
 	private $error;
+	
+	private $currentLines;
+	private $currentFileName;
+	private $currentLineNumber;
 	
 	
 	// Creates the compiler instance, configured with the given arguments.  It can be re-run multiple times on new files with the same configuration.
@@ -68,7 +74,13 @@ class OA_Preprocessor
 		$this->alreadyIncludedPathArray = array();
 		$this->alreadyReferencedFileNamesArray = array();
 		$this->lineStack = array();
+		$this->fileStack = array();
+		$this->lineNumberStack = array();
 		$this->startingDirectory = dirname($realInputPath);
+		
+		$this->currentLines = array();
+		$this->currentFileName = '';
+		$this->currentLineNumber = 0;
 		
 		$toReturn = null;
 		list($preLines, $lines, $this->postLines) = $this->_loadFile($realInputPath);
@@ -77,11 +89,13 @@ class OA_Preprocessor
 			// Process these lines until we find one containing only the PHP start.
 			if (count($lines) > 0)
 			{
-				array_push($this->lineStack, $lines);
+				$this->currentLines = $lines;
+				$this->currentFileName = $realInputPath;
+				$this->currentLineNumber = count($preLines);
 			}
 			$toReturn = $preLines;
 		}
-		return $toReturn;
+		return array($toReturn, $this->error);
 	}
 	
 	// Returns the next line in the input, returning null on error, end-of-file, or encountering PHP end in the initial
@@ -125,8 +139,14 @@ class OA_Preprocessor
 							{
 								if (count($lines) > 0)
 								{
-									// Push this on the stack and then loop so it is pulled off in the next run.
-									array_push($this->lineStack, $lines);
+									// Push our existing state onto the stack and assume these.
+									array_push($this->lineStack, $this->currentLines);
+									array_push($this->fileStack, $this->currentFileName);
+									array_push($this->lineNumberStack, $this->currentLineNumber);
+									
+									$this->currentLines = $lines;
+									$this->currentFileName = $subFilePath;
+									$this->currentLineNumber = count($preLines);
 								}
 							}
 						}
@@ -161,7 +181,7 @@ class OA_Preprocessor
 			}
 		}
 		assert(false !== $lineToSet);
-		return $lineToSet;
+		return array($lineToSet, $this->currentFileName, $this->currentLineNumber, $this->error);
 	}
 	
 	public function end()
@@ -169,24 +189,24 @@ class OA_Preprocessor
 		return $this->postLines;
 	}
 	
-	public function getError()
-	{
-		return $this->error;
-	}
-	
 	
 	private function _fetchNextLine()
 	{
 		$nextLine = null;
-		if (count($this->lineStack) > 0)
+		if (0 === count($this->currentLines))
 		{
-			$lineSet = array_pop($this->lineStack);
-			assert(count($lineSet) > 0);
-			$nextLine = array_shift($lineSet);
-			if (count($lineSet) > 0)
+			if (count($this->lineStack) > 0)
 			{
-				array_push($this->lineStack, $lineSet);
+				$this->currentLines = array_pop($this->lineStack);
+				$this->currentFileName = array_pop($this->fileStack);
+				$this->currentLineNumber = array_pop($this->lineNumberStack);
+				assert(count($this->currentLines) > 0);
 			}
+		}
+		if (0 !== count($this->currentLines))
+		{
+			$nextLine = array_shift($this->currentLines);
+			$this->currentLineNumber += 1;
 		}
 		return $nextLine;
 	}

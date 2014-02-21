@@ -51,6 +51,8 @@ class OA_Lexer
 	
 	// Active state.
 	private $buffer;
+	private $fileName;
+	private $line;
 	private $error;
 	
 	public function __construct($preprocessor)
@@ -62,9 +64,7 @@ class OA_Lexer
 		$this->sortedKeywordArray = $keywords;
 		
 		// Prime the buffer.
-		$this->buffer = $this->preprocessor->getLine();
-		// We want to set the error to null or whatever the preprocessor had during this call.
-		$this->error = $this->preprocessor->getError();
+		$this->_refreshBuffer();
 	}
 	
 	// Returns the next OA_LexerToken instance in the stream or null, if there aren't any.
@@ -74,9 +74,7 @@ class OA_Lexer
 		// A line will be left empty once it has been processed so refill it.
 		if ('' === $this->buffer)
 		{
-			$this->buffer = $this->preprocessor->getLine();
-			// If the preprocessor went into an error state, we want to inherit it.
-			$this->error = $this->preprocessor->getError();
+			$this->_refreshBuffer();
 		}
 		// If the buffer is valid, proceed.
 		if (null !== $this->buffer)
@@ -107,7 +105,7 @@ class OA_Lexer
 					$commentClose = '*/';
 					while ((null === $this->error) && (false === strpos($this->buffer, $commentClose)))
 					{
-						$line = $this->preprocessor->getLine();
+						list($line, $this->fileName, $this->line, $this->error) = $this->preprocessor->getLine();
 						if (null !== $line)
 						{
 							$this->buffer .= $line;
@@ -209,6 +207,12 @@ class OA_Lexer
 	}
 	
 	
+	private function _refreshBuffer()
+	{
+		// Prime the buffer.
+		list($this->buffer, $this->fileName, $this->line, $this->error) = $this->preprocessor->getLine();
+	}
+	
 	private function _advanceBufferAndCreate($tokenName, $count)
 	{
 		$extracted = null;
@@ -224,7 +228,7 @@ class OA_Lexer
 			$extracted = substr($this->buffer, 0, $count);
 			$this->buffer = substr($this->buffer, $count);
 		}
-		return new OA_LexerToken($tokenName, $extracted);
+		return new OA_LexerToken($tokenName, $extracted, $this->fileName, $this->line);
 	}
 	
 	private function _reduceRegexToken($longestToken, $longestLength)

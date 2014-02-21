@@ -28,15 +28,19 @@ require_once('ParsedElement.php');
 class OA_LexerToken extends OA_ParsedElement
 {
 	private $text;
+	private $file;
+	private $line;
 	
 	// Creates a new token instance.
 	// Args:
 	// -$name - The token type name.
 	// -$text - The textual content in the source file underlying the token.
-	public function __construct($name, $text)
+	public function __construct($name, $text, $file, $line)
 	{
 		parent::__construct($name);
 		$this->text = $text;
+		$this->file = $file;
+		$this->line = $line;
 	}
 	
 	// OA_ParsedElement.
@@ -49,6 +53,16 @@ class OA_LexerToken extends OA_ParsedElement
 	public function getText()
 	{
 		return $this->text;
+	}
+	
+	public function getFile()
+	{
+		return $this->file;
+	}
+	
+	public function getLine()
+	{
+		return $this->line;
 	}
 }
 

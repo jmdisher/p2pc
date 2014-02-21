@@ -66,8 +66,7 @@ class OA_LexerMaps
 		'__FILE__' => OA_LexerNames::kFile,
 		'DIRECTORY_SEPARATOR' => OA_LexerNames::kDirectorySeparator,
 		'PATH_SEPARATOR' => OA_LexerNames::kPathSeparator,
-		'ASSERT_BAIL' => OA_LexerNames::kAssertBail,
-		'STDOUT' => OA_LexerNames::kStdOut,
+		'global' => OA_LexerNames::kGlobal,
 		
 		// Structure.
 		"\n" => OA_LexerNames::kNewLine,

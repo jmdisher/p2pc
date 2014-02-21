@@ -76,6 +76,7 @@ require_once('Preprocessor.php');
 require_once('Lexer.php');
 require_once('ParserBuilder.php');
 require_once('OutputVisitor.php');
+require_once('TokenOutputStream.php');
 
 
 // This class only has a public constructor and one public method "compile" so using it is relatively straight-forward.
@@ -201,9 +202,7 @@ class OA_PhpCompiler
 	
 	private function _strip($stream, $lexer)
 	{
-		$buffer = '';
-		// We always start on a new line.
-		$previousWasNewLine = true;
+		$tokenStream = new OA_TokenOutputStream();
 		while (null !== ($token = $lexer->getNextToken()))
 		{
 			$name = $token->getName();
@@ -212,30 +211,15 @@ class OA_PhpCompiler
 				case OA_LexerNames::kSingleComment:
 				case OA_LexerNames::kMultiComment:
 				case OA_LexerNames::kWhiteSpace:
+				case OA_LexerNames::kNewLine:
 					// Strip all whitespace and comments.
 				break;
-				case OA_LexerNames::kNewLine:
-					// Only output stand-alone new lines.
-					if (!$previousWasNewLine)
-					{
-						$buffer .= "\n";
-					}
-					$previousWasNewLine = true;
-				break;
 				default:
-					if (!$previousWasNewLine)
-					{
-						$buffer .= ' ';
-					}
-					$buffer .= $token->getText();
-					$previousWasNewLine = false;
+					// Output anything else.
+					$tokenStream->writeToken($token);
 			}
 		}
-		if (!$previousWasNewLine)
-		{
-			$buffer .= "\n";
-		}
-		fwrite($stream, $buffer);
+		$tokenStream->flush($stream);
 		$error = $lexer->getError();
 		if (null !== $error)
 		{
@@ -248,9 +232,10 @@ class OA_PhpCompiler
 		$acceptedTree = $parser->parse($lexer);
 		if (null !== $acceptedTree)
 		{
-			$outputVisitor = new OA_OutputVisitor();
+			$tokenStream = new OA_TokenOutputStream();
+			$outputVisitor = new OA_OutputVisitor($tokenStream);
 			$acceptedTree->visit($outputVisitor);
-			$outputVisitor->flush($stream);
+			$tokenStream->flush($stream);
 		}
 	}
 	

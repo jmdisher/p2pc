@@ -24,39 +24,54 @@ require_once('ITreeWalker.php');
 
 
 // Author:  Jeff Disher (Open Autonomy Inc.)
-// An implementation of the tree walker which exists to serialize a parse tree back into a PHP source file.  This is the
-//  end-point of any compilation operation since the source and target language are both PHP.
-// This means that the high-level structure of the parse tree nodes are ignored and only serve to direct the order of
-//  leaf node visitation (in the tree nodes, themselves).  Only the leaf nodes are of interest and they are passed to
-//  the provided $outputStream for output formatting.
-class OA_OutputVisitor implements OA_ITreeWalker
+// An implementation of the tree walker which exists to extract the name of a function from the parse tree representing
+//  its declaration.
+class OA_FunctionDeclarationWalker implements OA_ITreeWalker
 {
-	private $outputStream;
+	const kIdentifier = 'IDENTIFIER';
+	
+	
+	private $functionNameToken;
+	private $shouldWalkNextChild;
 	
 	
 	// Creates an empty representation of the receiver.
-	public function __construct($outputStream)
+	public function __construct()
 	{
-		$this->outputStream = $outputStream;
+		$this->functionNameToken = null;
+		$this->shouldWalkNextChild = true;
 	}
 	
 	// OA_ITreeWalker.
 	public function preVisitTree($tree)
 	{
-		// We want to walk all leaves so we need to visit the children of every tree node.
-		return true;
+		// We only want to visit the top-level declaration node so switch this to no after this call.
+		$shouldVisitChildren = $this->shouldWalkNextChild;
+		$this->shouldWalkNextChild = false;
+		return $shouldVisitChildren;
 	}
 	
 	// OA_ITreeWalker.
 	public function postVisitTree($tree)
 	{
-		// Do nothing.
+		// Do nothing on exit.
 	}
 	
 	// OA_ITreeWalker.
 	public function visitLeaf($leaf)
 	{
-		$this->outputStream->writeToken($leaf);
+		// We want to find the identifier token since that is the name under the top-level decl.
+		if (OA_FunctionDeclarationWalker::kIdentifier === $leaf->getName())
+		{
+			assert(null === $this->functionNameToken);
+			$this->functionNameToken = $leaf;
+		}
+	}
+	
+	// Returns the lexer token instance representing the function name.
+	public function getFunctionNameToken()
+	{
+		return $this->functionNameToken;
 	}
 }
 

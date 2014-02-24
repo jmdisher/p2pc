@@ -77,6 +77,7 @@ require_once('Lexer.php');
 require_once('ParserBuilder.php');
 require_once('OutputVisitor.php');
 require_once('TokenOutputStream.php');
+require_once('SymbolTableBuilder.php');
 
 
 // This class only has a public constructor and one public method "compile" so using it is relatively straight-forward.
@@ -170,10 +171,33 @@ class OA_PhpCompiler
 		}
 		else if (null !== $this->options->parserGrammarFilePath)
 		{
+			// Read the grammar file and produce the parser object.
 			$parser = OA_ParserBuilder::buildFromXmlFile($this->options->parserGrammarFilePath);
+			// We don't expect this to fail unless the grammar is invalid.
 			assert(null !== $parser);
+			
+			// Create the lexer from the preprocessor.
 			$lexer = new OA_Lexer($preprocessor);
-			$this->_parse($stream, $lexer, $parser);
+			
+			// See if we need to generate a symbol table report.
+			$reportVisitor = (null !== $this->options->symbolTableReportPath) ? new OA_SymbolTableBuilder() : null;
+			
+			// Run the parser
+			$this->_parse($stream, $lexer, $parser, $reportVisitor);
+			
+			// If we were generating a report, close that file.
+			if (null !== $reportVisitor)
+			{
+				$tempName = $this->options->symbolTableReportPath . '.tmp';
+				$reportStream = fopen($tempName, 'w');
+				// This error is unrecoverable.
+				assert(FALSE !== $reportStream);
+				$reportVisitor->writeReportToStream($reportStream);
+				fclose($reportStream);
+				$didRename = rename($tempName, $this->options->symbolTableReportPath);
+				// This error is unrecoverable.
+				assert($didRename);
+			}
 		}
 		else
 		{
@@ -228,11 +252,15 @@ class OA_PhpCompiler
 		}
 	}
 	
-	private function _parse($stream, $lexer, $parser)
+	private function _parse($stream, $lexer, $parser, $reportVisitor)
 	{
 		$acceptedTree = $parser->parse($lexer);
 		if (null !== $acceptedTree)
 		{
+			if (null !== $reportVisitor)
+			{
+				$acceptedTree->visit($reportVisitor);
+			}
 			$tokenStream = new OA_TokenOutputStream();
 			$outputVisitor = new OA_OutputVisitor($tokenStream);
 			$acceptedTree->visit($outputVisitor);

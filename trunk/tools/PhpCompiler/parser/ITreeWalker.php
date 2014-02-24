@@ -28,6 +28,8 @@
 interface OA_ITreeWalker
 {
 	// Called upon visiting a branching node structure (a parser reduction) before any of its children are visited.
+	// Returns a boolean indicating whether the visitation should continue to $tree's children.  True means to continue
+	//  while false will immediately call postVisitTree() and then return from this node.
 	public function preVisitTree($tree);
 	
 	// Called upon visiting a branching node structure (a parser reduction) after any of its children have been visited.

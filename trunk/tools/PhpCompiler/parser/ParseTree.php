@@ -42,10 +42,13 @@ class OA_ParseTree extends OA_ParsedElement
 	// OA_ParsedElement.
 	public function visit($visitor)
 	{
-		$visitor->preVisitTree($this);
-		foreach ($this->children as $child)
+		$shouldVisit = $visitor->preVisitTree($this);
+		if ($shouldVisit)
 		{
-			$child->visit($visitor);
+			foreach ($this->children as $child)
+			{
+				$child->visit($visitor);
+			}
 		}
 		$visitor->postVisitTree($this);
 	}

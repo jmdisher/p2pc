@@ -21,6 +21,7 @@
  SOFTWARE.
 */
 require_once('ITreeWalker.php');
+require_once('Symbol_ClassDeclaration.php');
 
 
 // Author:  Jeff Disher (Open Autonomy Inc.)
@@ -41,7 +42,7 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 		OA_ClassDeclarationWalker::kStaticFunctionDecl,
 	);
 	
-	private $classNameToken;
+	private $classObject;
 	private $isWalkingClass;
 	private $functionNameTokens;
 	
@@ -49,9 +50,8 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 	// Creates an empty representation of the receiver.
 	public function __construct()
 	{
-		$this->classNameToken = null;
+		$this->classObject = null;
 		$this->isWalkingClass = false;
-		$this->functionNameTokens = array();
 	}
 	
 	// OA_ITreeWalker.
@@ -74,9 +74,9 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 				//  that this is a static function declaration.
 				$childWalker = new OA_FunctionDeclarationWalker();
 				$tree->visit($childWalker);
-				$token = $childWalker->getFunctionNameToken();
-				assert(null !== $token);
-				$this->functionNameTokens[] = $token;
+				$functionObject = $childWalker->getFunctionDeclarationObject();
+				assert(null !== $functionObject);
+				$this->classObject->addStaticFunction($functionObject);
 			}
 		}
 		$this->isWalkingClass = true;
@@ -92,22 +92,15 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 	public function visitLeaf($leaf)
 	{
 		// We want to get the first identifier we encounter since that will be the class name.
-		if ((OA_ClassDeclarationWalker::kIdentifier === $leaf->getName()) && (null === $this->classNameToken))
+		if ((OA_ClassDeclarationWalker::kIdentifier === $leaf->getName()) && (null === $this->classObject))
 		{
-			$this->classNameToken = $leaf;
+			$this->classObject = new OA_Symbol_ClassDeclaration($leaf);
 		}
 	}
 	
-	// Returns the lexer token of the class name.
-	public function getClassNameToken()
+	public function getClassDeclarationObject()
 	{
-		return $this->classNameToken;
-	}
-	
-	// Returns the array of lexer tokens representing the names of the static functions defined in this class.
-	public function getStaticFunctionNameTokens()
-	{
-		return $this->functionNameTokens;
+		return $this->classObject;
 	}
 }
 

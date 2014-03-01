@@ -21,6 +21,7 @@
  SOFTWARE.
 */
 require_once('ITreeWalker.php');
+require_once('Symbol_FunctionDeclaration.php');
 
 
 // Author:  Jeff Disher (Open Autonomy Inc.)
@@ -68,10 +69,9 @@ class OA_FunctionDeclarationWalker implements OA_ITreeWalker
 		}
 	}
 	
-	// Returns the lexer token instance representing the function name.
-	public function getFunctionNameToken()
+	public function getFunctionDeclarationObject()
 	{
-		return $this->functionNameToken;
+		return new OA_Symbol_FunctionDeclaration($this->functionNameToken);
 	}
 }
 

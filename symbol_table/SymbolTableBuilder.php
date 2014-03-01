@@ -38,21 +38,17 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 	const kClassDecl = 'P_CLASS_DECL';
 	
 	
-	// The array of global function name tokens.
-	private $functionNameTokens;
-	// The array of class name tokens.
-	private $classNameTokens;
-	// The map of textual class name strings to arrays of the function name tokens for all static functions declared
-	//  within said class.
-	private $classNameToStaticFunctions;
+	// The array of global function declaration objects.
+	private $functionObjects;
+	// The array of class declaration objects.
+	private $classObjects;
 	
 	
 	// Creates an empty representation of the receiver.
 	public function __construct()
 	{
-		$this->functionNameTokens = array();
-		$this->classNameTokens = array();
-		$this->classNameToStaticFunctions = array();
+		$this->functionObjects = array();
+		$this->classObjects = array();
 	}
 	
 	// OA_ITreeWalker.
@@ -68,19 +64,18 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 				$shouldVisitChildren = false;
 				$childWalker = new OA_FunctionDeclarationWalker();
 				$tree->visit($childWalker);
-				$token = $childWalker->getFunctionNameToken();
-				assert(null !== $token);
-				$this->functionNameTokens[] = $token;
+				$functionObject = $childWalker->getFunctionDeclarationObject();
+				assert(null !== $functionObject);
+				$this->functionObjects[] = $functionObject;
 			break;
 			case OA_SymbolTableBuilder::kClassDecl:
 				// We want to switch over to the class declaration walker so terminate our traversal of this tree.
 				$shouldVisitChildren = false;
 				$childWalker = new OA_ClassDeclarationWalker();
 				$tree->visit($childWalker);
-				$token = $childWalker->getClassNameToken();
-				assert(null !== $token);
-				$this->classNameTokens[] = $token;
-				$this->classNameToStaticFunctions[$token->getText()] = $childWalker->getStaticFunctionNameTokens();
+				$classObject = $childWalker->getClassDeclarationObject();
+				assert(null !== $classObject);
+				$this->classObjects[] = $classObject;
 			break;
 			default:
 		}
@@ -103,32 +98,16 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 	public function writeReportToStream($stream)
 	{
 		// Output all of the top-level global functions.
-		foreach ($this->functionNameTokens as $token)
+		foreach ($this->functionObjects as $functionObject)
 		{
-			$functionName = $token->getText();
-			$fileName = $token->getFile();
-			$lineNumber = $token->getLine();
-			$string = "GLOBAL FUNCTION: $functionName\n\t$fileName:$lineNumber\n";
+			$string = $functionObject->getDescription('GLOBAL ', '');
 			fwrite($stream, $string);
 		}
 		// Output all of the classes.
-		foreach ($this->classNameTokens as $token)
+		foreach ($this->classObjects as $classObject)
 		{
-			$className = $token->getText();
-			$fileName = $token->getFile();
-			$lineNumber = $token->getLine();
-			$string = "CLASS: $className\n\t$fileName:$lineNumber\n";
+			$string = $classObject->getDescription('');
 			fwrite($stream, $string);
-			$staticTokens = $this->classNameToStaticFunctions[$className];
-			// Output all of the static functions in said classes.
-			foreach ($staticTokens as $staticToken)
-			{
-				$functionName = $staticToken->getText();
-				$fileName = $staticToken->getFile();
-				$lineNumber = $staticToken->getLine();
-				$functionString = "\tSTATIC FUNCTION: $className::$functionName\n\t\t$fileName:$lineNumber\n";
-				fwrite($stream, $functionString);
-			}
 		}
 	}
 }

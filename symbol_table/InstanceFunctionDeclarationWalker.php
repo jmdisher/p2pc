@@ -33,13 +33,15 @@ class OA_InstanceFunctionDeclarationWalker implements OA_ITreeWalker
 	const kFunctionDecl = 'P_FUNCTION_DECL';
 	
 	
+	private $callingContext;
 	private $functionTreeTop;
 	private $functionObject;
 	
 	
 	// Creates an empty representation of the receiver.
-	public function __construct()
+	public function __construct($callingContext)
 	{
+		$this->callingContext = $callingContext;
 		$this->functionTreeTop = null;
 		$this->functionObject = null;
 	}
@@ -56,7 +58,7 @@ class OA_InstanceFunctionDeclarationWalker implements OA_ITreeWalker
 		{
 			if (OA_StaticFunctionDeclarationWalker::kFunctionDecl === $tree->getName())
 			{
-				$childWalker = new OA_FunctionDeclarationWalker($this->functionTreeTop);
+				$childWalker = new OA_FunctionDeclarationWalker($this->callingContext, $this->functionTreeTop);
 				$tree->visit($childWalker);
 				$functionObject = $childWalker->getFunctionDeclarationObject();
 				assert(null !== $functionObject);

@@ -67,6 +67,7 @@ class OA_LexerMaps
 		'DIRECTORY_SEPARATOR' => OA_LexerNames::kDirectorySeparator,
 		'PATH_SEPARATOR' => OA_LexerNames::kPathSeparator,
 		'global' => OA_LexerNames::kGlobal,
+		'parent' => OA_LexerNames::kParent,
 		
 		// Structure.
 		"\n" => OA_LexerNames::kNewLine,

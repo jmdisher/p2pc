@@ -24,6 +24,7 @@ require_once('ITreeWalker.php');
 require_once('Symbol_ClassDeclaration.php');
 require_once('StaticFunctionDeclarationWalker.php');
 require_once('InstanceFunctionDeclarationWalker.php');
+require_once('CallingContext.php');
 
 
 // Author:  Jeff Disher (Open Autonomy Inc.)
@@ -35,6 +36,7 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 	const kClassLine = 'P_CLASS_LINE';
 	const kStaticFunctionDecl = 'P_STATIC_FUNCTION_DECL';
 	const kInstanceFunctionDecl = 'P_INST_FUNCTION_DECL';
+	const kExtension = 'P_EXTENSION';
 	
 	// Since we need to dig a few levels down into the parse tree to start walking the class lines, here is the white
 	//  list of nodes which we should be willing to visit.
@@ -43,16 +45,23 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 		OA_ClassDeclarationWalker::kClassLine,
 	);
 	
+	private $className;
 	private $classObject;
 	private $isWalkingClass;
-	private $functionNameTokens;
+	// Note that we will handle the case of the extension clause within this walker, itself.  This is a bit of a hack
+	//  but it is a very simple clause so it is simpler than creating a whole new walker class.
+	private $isWalkingExtension;
+	private $callingContext;
 	
 	
 	// Creates an empty representation of the receiver.
 	public function __construct()
 	{
+		$this->className = null;
 		$this->classObject = null;
 		$this->isWalkingClass = false;
+		$this->isWalkingExtension = false;
+		$this->callingContext = null;
 	}
 	
 	// OA_ITreeWalker.
@@ -81,11 +90,16 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 			else if (OA_ClassDeclarationWalker::kInstanceFunctionDecl === $name)
 			{
 				// Switch to the instance function declaration walker and extract the function it finds.
-				$childWalker = new OA_InstanceFunctionDeclarationWalker();
+				$childWalker = new OA_InstanceFunctionDeclarationWalker($this->callingContext);
 				$tree->visit($childWalker);
 				$functionObject = $childWalker->getFunctionDeclarationObject();
 				assert(null !== $functionObject);
 				$this->classObject->addInstanceFunction($functionObject);
+			}
+			else if (OA_ClassDeclarationWalker::kExtension === $name)
+			{
+				$this->isWalkingExtension = true;
+				$shouldVisitChildren = true;
 			}
 		}
 		$this->isWalkingClass = true;
@@ -95,15 +109,27 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 	// OA_ITreeWalker.
 	public function postVisitTree($tree)
 	{
+		if ($this->isWalkingExtension && (OA_ClassDeclarationWalker::kExtension === $tree->getName()))
+		{
+			$this->isWalkingExtension = false;
+		}
 	}
 	
 	// OA_ITreeWalker.
 	public function visitLeaf($leaf)
 	{
 		// We want to get the first identifier we encounter since that will be the class name.
-		if ((null === $this->classObject) && (OA_ClassDeclarationWalker::kIdentifier === $leaf->getName()))
+		if (OA_ClassDeclarationWalker::kIdentifier === $leaf->getName())
 		{
-			$this->classObject = new OA_Symbol_ClassDeclaration($leaf);
+			if (null === $this->classObject)
+			{
+				$this->className = $leaf->getText();
+				$this->classObject = new OA_Symbol_ClassDeclaration($leaf);
+			}
+			else if ($this->isWalkingExtension)
+			{
+				$this->callingContext = new OA_CallingContext($leaf);
+			}
 		}
 	}
 	

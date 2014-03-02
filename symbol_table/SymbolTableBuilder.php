@@ -62,13 +62,15 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 	{
 		// By default, we will walk all children unless we identity a sub-tree of specialized interest to us.
 		$shouldVisitChildren = true;
+		// There is no calling context for the top-level global calls.
+		$callingContext = null;
 		$name = $tree->getName();
 		switch($name)
 		{
 			case OA_SymbolTableBuilder::kFunctionDecl:
 				// We want to switch over to the function declaration walker so terminate our traversal of this tree.
 				$shouldVisitChildren = false;
-				$childWalker = new OA_FunctionDeclarationWalker($tree);
+				$childWalker = new OA_FunctionDeclarationWalker($callingContext, $tree);
 				$tree->visit($childWalker);
 				$functionObject = $childWalker->getFunctionDeclarationObject();
 				assert(null !== $functionObject);
@@ -88,7 +90,7 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 				$this->classObjects[] = $classObject;
 			break;
 			default:
-				$callObject = OA_CodeBlockHelpers::findCallObject($tree, $name);
+				$callObject = OA_CodeBlockHelpers::findCallObject($callingContext, $tree, $name);
 				if (null !== $callObject)
 				{
 					$this->functionCallObjects[] = $callObject;
@@ -153,7 +155,7 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 	}
 	
 	
-	private function _markAllCalls($registry, $callArray)
+	private static function _markAllCalls($registry, $callArray)
 	{
 		foreach($callArray as $call)
 		{

@@ -60,6 +60,7 @@ class OA_LexerNames
 	const kDirectorySeparator = 'DIR_SEP';
 	const kPathSeparator = 'PATH_SEP';
 	const kGlobal = 'GLOBAL';
+	const kParent = 'PARENT';
 		
 	// Structure.
 	const kNewLine = 'NEW_LINE';

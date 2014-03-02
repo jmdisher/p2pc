@@ -24,6 +24,7 @@ require_once('CallNewWalker.php');
 require_once('CallGlobalWalker.php');
 require_once('CallStaticWalker.php');
 require_once('CallVirtualWalker.php');
+require_once('CallParentWalker.php');
 
 
 // Author:  Jeff Disher (Open Autonomy Inc.)
@@ -34,9 +35,10 @@ class OA_CodeBlockHelpers
 	const kCallGlobal = 'P_GLOBAL_CALL';
 	const kCallStatic = 'P_STATIC_CALL';
 	const kCallVirtual = 'P_VIRTUAL_CALL';
+	const kCallParent = 'P_PARENT_CALL';
 	
 	
-	public static function findCallObject($tree, $treeName)
+	public static function findCallObject($callingContext, $tree, $treeName)
 	{
 		$callObject = null;
 		switch($treeName)
@@ -62,6 +64,13 @@ class OA_CodeBlockHelpers
 			case OA_CodeBlockHelpers::kCallVirtual:
 				// Note that we still need to call children to see the argument lists.
 				$childWalker = new OA_CallVirtualWalker();
+				$tree->visit($childWalker);
+				$callObject = $childWalker->getFunctionCallObject();
+			break;
+			case OA_CodeBlockHelpers::kCallParent:
+				// Note that we still need to call children to see the argument lists.
+				assert($callingContext instanceof OA_CallingContext);
+				$childWalker = new OA_CallParentWalker($callingContext);
 				$tree->visit($childWalker);
 				$callObject = $childWalker->getFunctionCallObject();
 			break;

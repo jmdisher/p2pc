@@ -56,7 +56,10 @@ class OA_StaticFunctionDeclarationWalker implements OA_ITreeWalker
 		{
 			if (OA_StaticFunctionDeclarationWalker::kFunctionDecl === $tree->getName())
 			{
-				$childWalker = new OA_FunctionDeclarationWalker($this->functionTreeTop);
+				// Static functions will use a null calling context, for now.  In the future, this will be required if
+				//  permissions checking is added.
+				$callingContext = null;
+				$childWalker = new OA_FunctionDeclarationWalker($callingContext, $this->functionTreeTop);
 				$tree->visit($childWalker);
 				$functionObject = $childWalker->getFunctionDeclarationObject();
 				assert(null !== $functionObject);

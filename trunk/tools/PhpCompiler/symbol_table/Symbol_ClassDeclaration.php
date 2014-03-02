@@ -66,6 +66,31 @@ class OA_Symbol_ClassDeclaration
 		}
 		return $string;
 	}
+	
+	public function registerAllFunctions($registry)
+	{
+		assert($registry instanceof OA_FunctionRegistry);
+		
+		$functionPrefix = $this->nameToken->getText() . '::';
+		foreach ($this->staticFunctions as $functionObject)
+		{
+			$functionName = $functionPrefix . $functionObject->getName();
+			$registry->registerNormalFunction($functionName, $functionObject);
+		}
+		foreach ($this->instanceFunctions as $functionObject)
+		{
+			$functionIdentifier = $functionObject->getName();
+			if ('__construct' === $functionIdentifier)
+			{
+				$functionName = $functionPrefix . $functionIdentifier;
+				$registry->registerNormalFunction($functionName, $functionObject);
+			}
+			else
+			{
+				$registry->registerVirtualFunction($functionIdentifier, $functionObject);
+			}
+		}
+	}
 }
 
 

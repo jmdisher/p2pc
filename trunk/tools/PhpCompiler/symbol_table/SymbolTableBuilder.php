@@ -24,6 +24,7 @@ require_once('ITreeWalker.php');
 require_once('FunctionDeclarationWalker.php');
 require_once('ClassDeclarationWalker.php');
 require_once('CodeBlockHelpers.php');
+require_once('FunctionRegistry.php');
 
 
 // Author:  Jeff Disher (Open Autonomy Inc.)
@@ -37,6 +38,7 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 	// Define the constants we are interested in searching through 
 	const kFunctionDecl = 'P_FUNCTION_DECL';
 	const kClassDecl = 'P_CLASS_DECL';
+	const kAbstractClassDecl = 'P_ABSTRACT_CLASS_DECL';
 	
 	
 	// The array of global function declaration objects.
@@ -73,7 +75,11 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 				$this->functionObjects[] = $functionObject;
 			break;
 			case OA_SymbolTableBuilder::kClassDecl:
+			case OA_SymbolTableBuilder::kAbstractClassDecl:
 				// We want to switch over to the class declaration walker so terminate our traversal of this tree.
+				// Note that we also use this parser for abstract classes but any abstract function declarations will be
+				//  skipped since they are a different parse tree shape than the other kinds of functions the class
+				//  walks and processes.
 				$shouldVisitChildren = false;
 				$childWalker = new OA_ClassDeclarationWalker();
 				$tree->visit($childWalker);
@@ -85,7 +91,6 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 				$callObject = OA_CodeBlockHelpers::findCallObject($tree, $name);
 				if (null !== $callObject)
 				{
-					$shouldVisitChildren = false;
 					$this->functionCallObjects[] = $callObject;
 				}
 		}
@@ -102,6 +107,25 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 	public function visitLeaf($leaf)
 	{
 		// This walker isn't interested in leaf nodes.
+	}
+	
+	public function performDeadCodeElimination()
+	{
+		// TODO:  Make this actually change the resultant tree (or just mark the referenced nodes invalid), since it now
+		//  only serves to provide information to the symbol table (which can still be valuable for single-entry
+		//  deployments).
+		$registry = new OA_FunctionRegistry();
+		
+		foreach ($this->functionObjects as $functionObject)
+		{
+			$registry->registerNormalFunction($functionObject->getName(), $functionObject);
+		}
+		foreach ($this->classObjects as $classObject)
+		{
+			$classObject->registerAllFunctions($registry);
+		}
+		
+		OA_SymbolTableBuilder::_markAllCalls($registry, $this->functionCallObjects);
 	}
 	
 	// Called to write a human readable report of the created symbol table to an output stream.
@@ -125,6 +149,20 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 		{
 			$string = $functionCallObject->getDescription();
 			fwrite($stream, $string);
+		}
+	}
+	
+	
+	private function _markAllCalls($registry, $callArray)
+	{
+		foreach($callArray as $call)
+		{
+			$functionObjects = $call->getTargetsFromRegistry($registry);
+			foreach ($functionObjects as $functionObject)
+			{
+				$calls = $functionObject->setAliveAndGetCalls();
+				OA_SymbolTableBuilder::_markAllCalls($registry, $calls);
+			}
 		}
 	}
 }

@@ -52,7 +52,6 @@ class OA_FunctionDeclarationWalker implements OA_ITreeWalker
 		$callObject = OA_CodeBlockHelpers::findCallObject($tree, $tree->getName());
 		if (null !== $callObject)
 		{
-			$shouldVisitChildren = false;
 			$this->functionCallObjects[] = $callObject;
 		}
 		// We need to look at everything in this tree.

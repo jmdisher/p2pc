@@ -26,6 +26,7 @@
 // The description of a function declaration symbol in a compiled program.  This can either be global or static.
 class OA_Symbol_FunctionDeclaration
 {
+	private $isAlive;
 	private $functionTreeTop;
 	private $nameToken;
 	private $functionCallObjects;
@@ -35,6 +36,8 @@ class OA_Symbol_FunctionDeclaration
 		assert(null !== $functionTreeTop);
 		assert(null !== $nameToken);
 		assert(null !== $functionCallObjects);
+		
+		$this->isAlive = false;
 		$this->functionTreeTop = $functionTreeTop;
 		$this->nameToken = $nameToken;
 		$this->functionCallObjects = $functionCallObjects;
@@ -45,12 +48,31 @@ class OA_Symbol_FunctionDeclaration
 		$functionName = $this->nameToken->getText();
 		$fileName = $this->nameToken->getFile();
 		$lineNumber = $this->nameToken->getLine();
-		$string = $indentation . "FUNCTION: $namePrefix$functionName\n\t(declared $fileName:$lineNumber)\n";
+		$liveness = ($this->isAlive ? 'alive' : 'DEAD');
+		$string = $indentation . "FUNCTION: $namePrefix$functionName ($liveness)\n\t(declared $fileName:$lineNumber)\n";
 		foreach ($this->functionCallObjects as $functionCallObject)
 		{
 			$string .= "\t\t" . $functionCallObject->getDescription();
 		}
 		return $string;
+	}
+	
+	public function getName()
+	{
+		return $this->nameToken->getText();
+	}
+	
+	// Sets this function as alive (reachable) and returns the list of functions that it calls.  Note that the list of
+	//  functions is only returned the first time this is called.  Any later calls will see an empty array.
+	public function setAliveAndGetCalls()
+	{
+		$calls = array();
+		if (!$this->isAlive)
+		{
+			$this->isAlive = true;
+			$calls = $this->functionCallObjects;
+		}
+		return $calls;
 	}
 }
 

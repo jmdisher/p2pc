@@ -23,10 +23,7 @@
 require_once('ITreeWalker.php');
 require_once('FunctionDeclarationWalker.php');
 require_once('ClassDeclarationWalker.php');
-require_once('CallNewWalker.php');
-require_once('CallGlobalWalker.php');
-require_once('CallStaticWalker.php');
-require_once('CallVirtualWalker.php');
+require_once('CodeBlockHelpers.php');
 
 
 // Author:  Jeff Disher (Open Autonomy Inc.)
@@ -40,10 +37,6 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 	// Define the constants we are interested in searching through 
 	const kFunctionDecl = 'P_FUNCTION_DECL';
 	const kClassDecl = 'P_CLASS_DECL';
-	const kCallNew = 'P_NEW';
-	const kCallGlobal = 'P_GLOBAL_CALL';
-	const kCallStatic = 'P_STATIC_CALL';
-	const kCallVirtual = 'P_VIRTUAL_CALL';
 	
 	
 	// The array of global function declaration objects.
@@ -73,7 +66,7 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 			case OA_SymbolTableBuilder::kFunctionDecl:
 				// We want to switch over to the function declaration walker so terminate our traversal of this tree.
 				$shouldVisitChildren = false;
-				$childWalker = new OA_FunctionDeclarationWalker();
+				$childWalker = new OA_FunctionDeclarationWalker($tree);
 				$tree->visit($childWalker);
 				$functionObject = $childWalker->getFunctionDeclarationObject();
 				assert(null !== $functionObject);
@@ -88,39 +81,13 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 				assert(null !== $classObject);
 				$this->classObjects[] = $classObject;
 			break;
-			case OA_SymbolTableBuilder::kCallNew:
-				// Note that we still need to call children to see the argument lists.
-				$childWalker = new OA_CallNewWalker();
-				$tree->visit($childWalker);
-				$functionCallObject = $childWalker->getFunctionCallObject();
-				assert(null !== $functionCallObject);
-				$this->functionCallObjects[] = $functionCallObject;
-			break;
-			case OA_SymbolTableBuilder::kCallGlobal:
-				// Note that we still need to call children to see the argument lists.
-				$childWalker = new OA_CallGlobalWalker();
-				$tree->visit($childWalker);
-				$functionCallObject = $childWalker->getFunctionCallObject();
-				assert(null !== $functionCallObject);
-				$this->functionCallObjects[] = $functionCallObject;
-			break;
-			case OA_SymbolTableBuilder::kCallStatic:
-				// Note that we still need to call children to see the argument lists.
-				$childWalker = new OA_CallStaticWalker();
-				$tree->visit($childWalker);
-				$functionCallObject = $childWalker->getFunctionCallObject();
-				assert(null !== $functionCallObject);
-				$this->functionCallObjects[] = $functionCallObject;
-			break;
-			case OA_SymbolTableBuilder::kCallVirtual:
-				// Note that we still need to call children to see the argument lists.
-				$childWalker = new OA_CallVirtualWalker();
-				$tree->visit($childWalker);
-				$functionCallObject = $childWalker->getFunctionCallObject();
-				assert(null !== $functionCallObject);
-				$this->functionCallObjects[] = $functionCallObject;
-			break;
 			default:
+				$callObject = OA_CodeBlockHelpers::findCallObject($tree, $name);
+				if (null !== $callObject)
+				{
+					$shouldVisitChildren = false;
+					$this->functionCallObjects[] = $callObject;
+				}
 		}
 		return $shouldVisitChildren;
 	}

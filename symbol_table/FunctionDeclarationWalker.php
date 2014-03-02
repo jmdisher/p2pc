@@ -32,23 +32,30 @@ class OA_FunctionDeclarationWalker implements OA_ITreeWalker
 	const kIdentifier = 'IDENTIFIER';
 	
 	
+	private $functionTreeTop;
 	private $functionNameToken;
-	private $shouldWalkNextChild;
+	private $functionCallObjects;
 	
 	
 	// Creates an empty representation of the receiver.
-	public function __construct()
+	public function __construct($functionTreeTop)
 	{
+		$this->functionTreeTop = $functionTreeTop;
 		$this->functionNameToken = null;
-		$this->shouldWalkNextChild = true;
+		$this->functionCallObjects = array();
 	}
 	
 	// OA_ITreeWalker.
 	public function preVisitTree($tree)
 	{
-		// We only want to visit the top-level declaration node so switch this to no after this call.
-		$shouldVisitChildren = $this->shouldWalkNextChild;
-		$this->shouldWalkNextChild = false;
+		$shouldVisitChildren = true;
+		$callObject = OA_CodeBlockHelpers::findCallObject($tree, $tree->getName());
+		if (null !== $callObject)
+		{
+			$shouldVisitChildren = false;
+			$this->functionCallObjects[] = $callObject;
+		}
+		// We need to look at everything in this tree.
 		return $shouldVisitChildren;
 	}
 	
@@ -62,16 +69,15 @@ class OA_FunctionDeclarationWalker implements OA_ITreeWalker
 	public function visitLeaf($leaf)
 	{
 		// We want to find the identifier token since that is the name under the top-level decl.
-		if (OA_FunctionDeclarationWalker::kIdentifier === $leaf->getName())
+		if ((null === $this->functionNameToken) && (OA_FunctionDeclarationWalker::kIdentifier === $leaf->getName()))
 		{
-			assert(null === $this->functionNameToken);
 			$this->functionNameToken = $leaf;
 		}
 	}
 	
 	public function getFunctionDeclarationObject()
 	{
-		return new OA_Symbol_FunctionDeclaration($this->functionNameToken);
+		return new OA_Symbol_FunctionDeclaration($this->functionTreeTop, $this->functionNameToken, $this->functionCallObjects);
 	}
 }
 

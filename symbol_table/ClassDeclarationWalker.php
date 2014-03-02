@@ -101,7 +101,7 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 	public function visitLeaf($leaf)
 	{
 		// We want to get the first identifier we encounter since that will be the class name.
-		if ((OA_ClassDeclarationWalker::kIdentifier === $leaf->getName()) && (null === $this->classObject))
+		if ((null === $this->classObject) && (OA_ClassDeclarationWalker::kIdentifier === $leaf->getName()))
 		{
 			$this->classObject = new OA_Symbol_ClassDeclaration($leaf);
 		}

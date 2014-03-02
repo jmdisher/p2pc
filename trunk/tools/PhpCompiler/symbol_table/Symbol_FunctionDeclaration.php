@@ -26,11 +26,18 @@
 // The description of a function declaration symbol in a compiled program.  This can either be global or static.
 class OA_Symbol_FunctionDeclaration
 {
+	private $functionTreeTop;
 	private $nameToken;
+	private $functionCallObjects;
 	
-	public function __construct($nameToken)
+	public function __construct($functionTreeTop, $nameToken, $functionCallObjects)
 	{
+		assert(null !== $functionTreeTop);
+		assert(null !== $nameToken);
+		assert(null !== $functionCallObjects);
+		$this->functionTreeTop = $functionTreeTop;
 		$this->nameToken = $nameToken;
+		$this->functionCallObjects = $functionCallObjects;
 	}
 	
 	public function getDescription($indentation, $namePrefix)
@@ -38,7 +45,12 @@ class OA_Symbol_FunctionDeclaration
 		$functionName = $this->nameToken->getText();
 		$fileName = $this->nameToken->getFile();
 		$lineNumber = $this->nameToken->getLine();
-		return $indentation . "FUNCTION: $namePrefix$functionName\n\t(declared $fileName:$lineNumber)\n";
+		$string = $indentation . "FUNCTION: $namePrefix$functionName\n\t(declared $fileName:$lineNumber)\n";
+		foreach ($this->functionCallObjects as $functionCallObject)
+		{
+			$string .= "\t\t" . $functionCallObject->getDescription();
+		}
+		return $string;
 	}
 }
 

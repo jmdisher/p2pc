@@ -33,33 +33,36 @@ class OA_StaticFunctionDeclarationWalker implements OA_ITreeWalker
 	const kFunctionDecl = 'P_FUNCTION_DECL';
 	
 	
-	private $isWalkingDeclaration;
+	private $functionTreeTop;
 	private $functionObject;
 	
 	
 	// Creates an empty representation of the receiver.
 	public function __construct()
 	{
-		$this->isWalkingDeclaration = false;
+		$this->functionTreeTop = null;
 		$this->functionObject = null;
 	}
 	
 	// OA_ITreeWalker.
 	public function preVisitTree($tree)
 	{
-		$shouldVisitChildren = !$this->isWalkingDeclaration;
-		if (!$shouldVisitChildren)
+		$shouldVisitChildren = (null === $this->functionTreeTop);
+		if (null === $this->functionTreeTop)
+		{
+			$this->functionTreeTop = $tree;
+		}
+		else
 		{
 			if (OA_StaticFunctionDeclarationWalker::kFunctionDecl === $tree->getName())
 			{
-				$childWalker = new OA_FunctionDeclarationWalker();
+				$childWalker = new OA_FunctionDeclarationWalker($this->functionTreeTop);
 				$tree->visit($childWalker);
 				$functionObject = $childWalker->getFunctionDeclarationObject();
 				assert(null !== $functionObject);
 				$this->functionObject = $functionObject;
 			}
 		}
-		$this->isWalkingDeclaration = true;
 		return $shouldVisitChildren;
 	}
 	

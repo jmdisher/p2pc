@@ -260,6 +260,7 @@ class OA_PhpCompiler
 			if (null !== $reportVisitor)
 			{
 				$acceptedTree->visit($reportVisitor);
+				$reportVisitor->performDeadCodeElimination();
 			}
 			$tokenStream = new OA_TokenOutputStream();
 			$outputVisitor = new OA_OutputVisitor($tokenStream);

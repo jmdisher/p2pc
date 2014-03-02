@@ -39,6 +39,11 @@ class OA_Symbol_VirtualCall implements OA_IFunctionCall
 		$functionName = $this->receiverFunctionNameToken->getText();
 		return "VIRTUAL ->$functionName()\n";
 	}
+	
+	public function getTargetsFromRegistry($registry)
+	{
+		return $registry->resolveVirtualReceiversForName($this->receiverFunctionNameToken->getText());
+	}
 }
 
 

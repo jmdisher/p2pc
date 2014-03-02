@@ -39,6 +39,12 @@ class OA_Symbol_GlobalCall implements OA_IFunctionCall
 		$functionName = $this->functionNameToken->getText();
 		return "GLOBAL $functionName()\n";
 	}
+	
+	public function getTargetsFromRegistry($registry)
+	{
+		$target = $registry->resolveStaticReceiverForName($this->functionNameToken->getText());
+		return (null !== $target) ? array($target) : array();
+	}
 }
 
 

@@ -42,6 +42,15 @@ class OA_Symbol_StaticCall implements OA_IFunctionCall
 		$functionName = $this->receiverFunctionNameToken->getText();
 		return "STATIC $className::$functionName()\n";
 	}
+	
+	public function getTargetsFromRegistry($registry)
+	{
+		$className = $this->receiverClassNameToken->getText();
+		$functionName = $this->receiverFunctionNameToken->getText();
+		$identifier = OA_FunctionRegistry::createNameForStaticFunction($className, $functionName);
+		$target = $registry->resolveStaticReceiverForName($identifier);
+		return (null !== $target) ? array($target) : array();
+	}
 }
 
 

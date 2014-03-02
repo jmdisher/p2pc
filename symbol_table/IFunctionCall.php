@@ -27,7 +27,12 @@
 //  of each kind of call.
 interface OA_IFunctionCall
 {
+	// Returns a human-readable description of the call.
 	public function getDescription();
+	
+	// Returns the array of target function declarations this function could be trying to call, as found within
+	//  $registry.
+	public function getTargetsFromRegistry($registry);
 }
 
 

@@ -39,6 +39,14 @@ class OA_Symbol_NewCall implements OA_IFunctionCall
 		$className = $this->receiverClassNameToken->getText();
 		return "new $className()\n";
 	}
+	
+	public function getTargetsFromRegistry($registry)
+	{
+		$className = $this->receiverClassNameToken->getText();
+		$identifier = OA_FunctionRegistry::createNameForConstructor($className);
+		$target = $registry->resolveStaticReceiverForName($identifier);
+		return (null !== $target) ? array($target) : array();
+	}
 }
 
 

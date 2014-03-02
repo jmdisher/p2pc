@@ -28,16 +28,23 @@ class OA_Symbol_ClassDeclaration
 {
 	private $nameToken;
 	private $staticFunctions;
+	private $instanceFunctions;
 	
 	public function __construct($nameToken)
 	{
 		$this->nameToken = $nameToken;
 		$this->staticFunctions = array();
+		$this->instanceFunctions = array();
 	}
 	
 	public function addStaticFunction($functionObject)
 	{
 		$this->staticFunctions[] = $functionObject;
+	}
+	
+	public function addInstanceFunction($functionObject)
+	{
+		$this->instanceFunctions[] = $functionObject;
 	}
 	
 	public function getDescription($indentation)
@@ -50,6 +57,11 @@ class OA_Symbol_ClassDeclaration
 		foreach ($this->staticFunctions as $functionObject)
 		{
 			$functionString = $functionObject->getDescription("\tSTATIC ", "$className::");
+			$string .= $functionString;
+		}
+		foreach ($this->instanceFunctions as $functionObject)
+		{
+			$functionString = $functionObject->getDescription("\tINSTANCE ", '->');
 			$string .= $functionString;
 		}
 		return $string;

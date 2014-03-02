@@ -38,7 +38,7 @@ class OA_Symbol_FunctionDeclaration
 		$functionName = $this->nameToken->getText();
 		$fileName = $this->nameToken->getFile();
 		$lineNumber = $this->nameToken->getLine();
-		return $indentation . "FUNCTION: $namePrefix$functionName\n\t$fileName:$lineNumber\n";
+		return $indentation . "FUNCTION: $namePrefix$functionName\n\t(declared $fileName:$lineNumber)\n";
 	}
 }
 

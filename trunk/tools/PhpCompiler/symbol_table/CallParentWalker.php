@@ -21,43 +21,33 @@
  SOFTWARE.
 */
 require_once('ITreeWalker.php');
-require_once('Symbol_FunctionDeclaration.php');
+require_once('Symbol_StaticCall.php');
 
 
 // Author:  Jeff Disher (Open Autonomy Inc.)
-// An implementation of the tree walker which exists to extract the name of a function from the parse tree representing
-//  its declaration.
-class OA_FunctionDeclarationWalker implements OA_ITreeWalker
+// An implementation of the tree walker which interprets calls to parent and synthesizes them as either NEW or INSTANCE
+//  call symbols.
+class OA_CallParentWalker implements OA_ITreeWalker
 {
 	const kIdentifier = 'IDENTIFIER';
+	const kParentCall = 'P_PARENT_CALL';
 	
 	
 	private $callingContext;
-	private $functionTreeTop;
-	private $functionNameToken;
-	private $functionCallObjects;
+	private $receiverFunctionNameToken;
 	
 	
 	// Creates an empty representation of the receiver.
-	public function __construct($callingContext, $functionTreeTop)
+	public function __construct($callingContext)
 	{
 		$this->callingContext = $callingContext;
-		$this->functionTreeTop = $functionTreeTop;
-		$this->functionNameToken = null;
-		$this->functionCallObjects = array();
+		$this->receiverFunctionNameToken = null;
 	}
 	
 	// OA_ITreeWalker.
 	public function preVisitTree($tree)
 	{
-		$shouldVisitChildren = true;
-		$callObject = OA_CodeBlockHelpers::findCallObject($this->callingContext, $tree, $tree->getName());
-		if (null !== $callObject)
-		{
-			$this->functionCallObjects[] = $callObject;
-		}
-		// We need to look at everything in this tree.
-		return $shouldVisitChildren;
+		return ($tree->getName() === OA_CallParentWalker::kParentCall);
 	}
 	
 	// OA_ITreeWalker.
@@ -69,16 +59,27 @@ class OA_FunctionDeclarationWalker implements OA_ITreeWalker
 	// OA_ITreeWalker.
 	public function visitLeaf($leaf)
 	{
-		// We want to find the identifier token since that is the name under the top-level decl.
-		if ((null === $this->functionNameToken) && (OA_FunctionDeclarationWalker::kIdentifier === $leaf->getName()))
+		// We are interested in the first identifier we see, but nothing else.
+		//  (looking for "PARENT COLON_COLON IDENTIFIER")
+		if (OA_CallParentWalker::kIdentifier === $leaf->getName())
 		{
-			$this->functionNameToken = $leaf;
+			assert(null === $this->receiverFunctionNameToken);
+			$this->receiverFunctionNameToken = $leaf;
 		}
 	}
 	
-	public function getFunctionDeclarationObject()
+	public function getFunctionCallObject()
 	{
-		return new OA_Symbol_FunctionDeclaration($this->functionTreeTop, $this->functionNameToken, $this->functionCallObjects);
+		$object = null;
+		if ('__construct' === $this->receiverFunctionNameToken->getText())
+		{
+			$object = new OA_Symbol_NewCall($this->callingContext->getClassNameToken());
+		}
+		else
+		{
+			$object = new OA_Symbol_VirtualCall($this->receiverFunctionNameToken);
+		}
+		return $object;
 	}
 }
 

@@ -58,6 +58,28 @@ class OA_ParseTree extends OA_ParsedElement
 	{
 		assert($child instanceof OA_ParsedElement);
 		$this->children[] = $child;
+		$child->setParent($this);
+	}
+	
+	// Removes the given $child from the receiver's list of child nodes.  This will fail if the child is not found.
+	public function removeChild($child)
+	{
+		$oldChildren = $this->children;
+		$this->children = array();
+		$found = false;
+		foreach ($oldChildren as $oldChild)
+		{
+			if ($oldChild === $child)
+			{
+				assert(!$found);
+				$found = true;
+			}
+			else
+			{
+				$this->children[] = $oldChild;
+			}
+		}
+		assert($found);
 	}
 }
 

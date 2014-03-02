@@ -91,6 +91,19 @@ class OA_Symbol_ClassDeclaration
 			}
 		}
 	}
+	
+	// Walks all the functions in this class, removing them from the parse tree if they were not marked as alive.
+	public function cleanDeadFunctions()
+	{
+		foreach ($this->staticFunctions as $functionObject)
+		{
+			$functionObject->cleanIfDead();
+		}
+		foreach ($this->instanceFunctions as $functionObject)
+		{
+			$functionObject->cleanIfDead();
+		}
+	}
 }
 
 

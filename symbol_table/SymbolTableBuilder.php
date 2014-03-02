@@ -113,11 +113,8 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 	
 	public function performDeadCodeElimination()
 	{
-		// TODO:  Make this actually change the resultant tree (or just mark the referenced nodes invalid), since it now
-		//  only serves to provide information to the symbol table (which can still be valuable for single-entry
-		//  deployments).
+		// Build the connections between caller and receiver ("mark").
 		$registry = new OA_FunctionRegistry();
-		
 		foreach ($this->functionObjects as $functionObject)
 		{
 			$registry->registerNormalFunction($functionObject->getName(), $functionObject);
@@ -126,8 +123,17 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 		{
 			$classObject->registerAllFunctions($registry);
 		}
-		
 		OA_SymbolTableBuilder::_markAllCalls($registry, $this->functionCallObjects);
+		
+		// Now delete all dead receivers ("sweep").
+		foreach ($this->functionObjects as $functionObject)
+		{
+			$functionObject->cleanIfDead();
+		}
+		foreach ($this->classObjects as $classObject)
+		{
+			$classObject->cleanDeadFunctions();
+		}
 	}
 	
 	// Called to write a human readable report of the created symbol table to an output stream.

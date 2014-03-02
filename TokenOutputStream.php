@@ -60,6 +60,7 @@ class OA_TokenOutputStream
 		OA_LexerNames::kIntConst,
 		OA_LexerNames::kFloatConst,
 		OA_LexerNames::kVariable,
+		OA_LexerNames::kExportComment,
 	);
 	
 	

@@ -126,6 +126,7 @@ class OA_LexerNames
 	const kSingleComment = 'SINGLE_COMMENT';
 	const kMultiComment = 'MULTI_COMMENT';
 	const kSpecialComment = 'SPECIAL_COMMENT';
+	const kExportComment = 'EXPORT_COMMENT';
 }
 
 ?>

@@ -74,6 +74,17 @@ class OA_Symbol_FunctionDeclaration
 		}
 		return $calls;
 	}
+	
+	// If the receiver has not been marked alive, this call will request that it remove its underlying parse tree node
+	//  from its parent.
+	public function cleanIfDead()
+	{
+		if (!$this->isAlive)
+		{
+			// This function declaration is dead so prune the underlying call from the tree.
+			$this->functionTreeTop->removeFromTree();
+		}
+	}
 }
 
 

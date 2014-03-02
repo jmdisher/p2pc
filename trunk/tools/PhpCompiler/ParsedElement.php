@@ -28,16 +28,35 @@
 abstract class OA_ParsedElement
 {
 	private $name;
+	private $parentTree;
 	
 	protected function __construct($name)
 	{
 		$this->name = $name;
+		$this->parentTree = null;
 	}
 	
 	// Returns the name which identifies the type of node the receiver represents, within the grammar of the language.
 	public function getName()
 	{
 		return $this->name;
+	}
+	
+	// Sets the parent tree node to $parent.  This is only used for dead code elimination.
+	public function setParent($parent)
+	{
+		assert($parent instanceof OA_ParseTree);
+		assert(null === $this->parentTree);
+		$this->parentTree = $parent;
+	}
+	
+	// Removes the receiver from the parse tree by requesting that its parent remove it.  This is only used for dead
+	//  code elimination.
+	public function removeFromTree()
+	{
+		assert(null !== $this->parentTree);
+		$this->parentTree->removeChild($this);
+		$this->parentTree = null;
 	}
 	
 	// Starts a recursive, in-order traversal of the parse tree rooted at the receiver node.

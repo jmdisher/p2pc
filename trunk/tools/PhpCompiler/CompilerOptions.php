@@ -51,6 +51,8 @@ class OA_CompilerOptions
 	public $parserGrammarFilePath;
 	// The path to the the file where a symbol table report should be generated, if one is requested.
 	public $symbolTableReportPath;
+	// True if we want to remove all uncalled functions found in the source.
+	public $eliminateDeadCode;
 	
 	
 	public function __construct()
@@ -63,6 +65,7 @@ class OA_CompilerOptions
 		$this->testLexer = false;
 		$this->parserGrammarFilePath = null;
 		$this->symbolTableReportPath = null;
+		$this->eliminateDeadCode = false;
 	}
 }
 

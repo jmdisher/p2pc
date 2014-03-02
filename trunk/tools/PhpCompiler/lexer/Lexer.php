@@ -60,6 +60,7 @@ class OA_Lexer
 		$this->preprocessor = $preprocessor;
 		// We want the keywords sorted so we check the longest ones first.
 		$keywords = array_keys(OA_LexerMaps::$keywordMap);
+		//EXPORT OA_LexerMaps::lengthSort;
 		usort($keywords, 'OA_LexerMaps::lengthSort');
 		$this->sortedKeywordArray = $keywords;
 		
@@ -90,6 +91,15 @@ class OA_Lexer
 					// Consume everything except for the final character (the new line).
 					$bufferLength = strlen($this->buffer);
 					$token = $this->_advanceBufferAndCreate(OA_LexerNames::kSpecialComment, $bufferLength - 1);
+				}
+				else if (0 === strpos($this->buffer, '//EXPORT'))
+				{
+					// "export" comments - these are similar to "special" in that they are passed through the lexer and
+					//  the parser sees them.  Their purpose is more specific, however, in that they are followed by a
+					//  symbol name and they act as a "virtual callsite" for the function, for the purposes of dead code
+					//  elimination liveness checking.  This is required since some functions are called via
+					//  string-formatted callbacks, etc.
+					$token = $this->_advanceBufferAndCreate(OA_LexerNames::kExportComment, strlen('//EXPORT'));
 				}
 				else if (0 === strpos($this->buffer, '//'))
 				{

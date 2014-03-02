@@ -22,6 +22,8 @@
 */
 require_once('ITreeWalker.php');
 require_once('Symbol_ClassDeclaration.php');
+require_once('StaticFunctionDeclarationWalker.php');
+require_once('InstanceFunctionDeclarationWalker.php');
 
 
 // Author:  Jeff Disher (Open Autonomy Inc.)
@@ -32,14 +34,13 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 	const kClassLines = 'P_CLASS_LINES';
 	const kClassLine = 'P_CLASS_LINE';
 	const kStaticFunctionDecl = 'P_STATIC_FUNCTION_DECL';
-	const kFunctionDecl = 'P_FUNCTION_DECL';
+	const kInstanceFunctionDecl = 'P_INST_FUNCTION_DECL';
 	
 	// Since we need to dig a few levels down into the parse tree to start walking the class lines, here is the white
 	//  list of nodes which we should be willing to visit.
 	private static $whitelist = array(
 		OA_ClassDeclarationWalker::kClassLines,
 		OA_ClassDeclarationWalker::kClassLine,
-		OA_ClassDeclarationWalker::kStaticFunctionDecl,
 	);
 	
 	private $classObject;
@@ -68,15 +69,23 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 			{
 				$shouldVisitChildren = true;
 			}
-			else if (OA_ClassDeclarationWalker::kFunctionDecl === $name)
+			else if (OA_ClassDeclarationWalker::kStaticFunctionDecl === $name)
 			{
-				// We can now switch into the function declaration walker since our white list and parse tree ensure
-				//  that this is a static function declaration.
-				$childWalker = new OA_FunctionDeclarationWalker();
+				// Switch to the static function declaration walker and extract the function it finds.
+				$childWalker = new OA_StaticFunctionDeclarationWalker();
 				$tree->visit($childWalker);
 				$functionObject = $childWalker->getFunctionDeclarationObject();
 				assert(null !== $functionObject);
 				$this->classObject->addStaticFunction($functionObject);
+			}
+			else if (OA_ClassDeclarationWalker::kInstanceFunctionDecl === $name)
+			{
+				// Switch to the instance function declaration walker and extract the function it finds.
+				$childWalker = new OA_InstanceFunctionDeclarationWalker();
+				$tree->visit($childWalker);
+				$functionObject = $childWalker->getFunctionDeclarationObject();
+				assert(null !== $functionObject);
+				$this->classObject->addInstanceFunction($functionObject);
 			}
 		}
 		$this->isWalkingClass = true;

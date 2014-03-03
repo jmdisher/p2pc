@@ -25,6 +25,7 @@ require_once('Symbol_ClassDeclaration.php');
 require_once('StaticFunctionDeclarationWalker.php');
 require_once('InstanceFunctionDeclarationWalker.php');
 require_once('CallingContext.php');
+require_once('AbstractFunctionDeclarationWalker.php');
 
 
 // Author:  Jeff Disher (Open Autonomy Inc.)
@@ -34,8 +35,11 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 	const kIdentifier = 'IDENTIFIER';
 	const kClassLines = 'P_CLASS_LINES';
 	const kClassLine = 'P_CLASS_LINE';
+	const kInterfaceLines = 'P_INTERFACE_LINES';
 	const kStaticFunctionDecl = 'P_STATIC_FUNCTION_DECL';
 	const kInstanceFunctionDecl = 'P_INST_FUNCTION_DECL';
+	const kInterfaceLine = 'P_INTERFACE_LINE';
+	const kAbstractFunctionDecl = 'P_ABSTRACT_FUNCTION_DECL';
 	const kExtension = 'P_EXTENSION';
 	
 	// Since we need to dig a few levels down into the parse tree to start walking the class lines, here is the white
@@ -43,6 +47,7 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 	private static $whitelist = array(
 		OA_ClassDeclarationWalker::kClassLines,
 		OA_ClassDeclarationWalker::kClassLine,
+		OA_ClassDeclarationWalker::kInterfaceLines,
 	);
 	
 	private $className;
@@ -96,6 +101,15 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 				assert(null !== $functionObject);
 				$this->classObject->addInstanceFunction($functionObject);
 			}
+			else if ((OA_ClassDeclarationWalker::kInterfaceLine === $name) || (OA_ClassDeclarationWalker::kAbstractFunctionDecl === $name))
+			{
+				// Switch to the abstract function declaration walker and extract the function it finds as a root.
+				$childWalker = new OA_AbstractFunctionDeclarationWalker();
+				$tree->visit($childWalker);
+				$functionObject = $childWalker->getFunctionDeclarationObject();
+				assert(null !== $functionObject);
+				$this->classObject->addExportedFunction($functionObject);
+			}
 			else if (OA_ClassDeclarationWalker::kExtension === $name)
 			{
 				$this->isWalkingExtension = true;
@@ -128,6 +142,7 @@ class OA_ClassDeclarationWalker implements OA_ITreeWalker
 			}
 			else if ($this->isWalkingExtension)
 			{
+				$this->classObject->setSuperclassName($leaf->getText());
 				$this->callingContext = new OA_CallingContext($leaf);
 			}
 		}

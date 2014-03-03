@@ -27,14 +27,18 @@
 class OA_Symbol_ClassDeclaration
 {
 	private $nameToken;
+	private $superclassName;
 	private $staticFunctions;
 	private $instanceFunctions;
+	private $exportedFunctions;
 	
 	public function __construct($nameToken)
 	{
 		$this->nameToken = $nameToken;
+		$this->superclassName = null;
 		$this->staticFunctions = array();
 		$this->instanceFunctions = array();
+		$this->exportedFunctions = array();
 	}
 	
 	public function addStaticFunction($functionObject)
@@ -70,8 +74,16 @@ class OA_Symbol_ClassDeclaration
 	public function registerAllFunctions($registry)
 	{
 		assert($registry instanceof OA_FunctionRegistry);
+		$thisClassName = $this->nameToken->getText();
 		
-		$functionPrefix = $this->nameToken->getText() . '::';
+		// Register our superclass relationship.
+		if (null !== $this->superclassName)
+		{
+			$registry->setClassRelationship($this->superclassName, $thisClassName);
+		}
+		
+		// Register the functions.
+		$functionPrefix = $thisClassName . '::';
 		foreach ($this->staticFunctions as $functionObject)
 		{
 			$functionName = $functionPrefix . $functionObject->getName();
@@ -103,6 +115,23 @@ class OA_Symbol_ClassDeclaration
 		{
 			$functionObject->cleanIfDead();
 		}
+	}
+	
+	// An exported static function acts as a "root" for dead code elimination.
+	public function addExportedFunction($functionObject)
+	{
+		$this->exportedFunctions[] = $functionObject;
+	}
+	
+	public function getAllExportedCalls()
+	{
+		return $this->exportedFunctions;
+	}
+	
+	// Note that this is the string name of the superclass.
+	public function setSuperclassName($superclassName)
+	{
+		$this->superclassName = $superclassName;
 	}
 }
 

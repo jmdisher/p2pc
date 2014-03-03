@@ -39,6 +39,7 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 	const kFunctionDecl = 'P_FUNCTION_DECL';
 	const kClassDecl = 'P_CLASS_DECL';
 	const kAbstractClassDecl = 'P_ABSTRACT_CLASS_DECL';
+	const kInterfaceDecl = 'P_INTERFACE_DECL';
 	
 	
 	// The array of global function declaration objects.
@@ -78,6 +79,8 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 			break;
 			case OA_SymbolTableBuilder::kClassDecl:
 			case OA_SymbolTableBuilder::kAbstractClassDecl:
+				// NOTE:  For the time being, we will parse interfaces as classes.
+			case OA_SymbolTableBuilder::kInterfaceDecl:
 				// We want to switch over to the class declaration walker so terminate our traversal of this tree.
 				// Note that we also use this parser for abstract classes but any abstract function declarations will be
 				//  skipped since they are a different parse tree shape than the other kinds of functions the class
@@ -124,6 +127,11 @@ class OA_SymbolTableBuilder implements OA_ITreeWalker
 			$classObject->registerAllFunctions($registry);
 		}
 		OA_SymbolTableBuilder::_markAllCalls($registry, $this->functionCallObjects);
+		foreach ($this->classObjects as $classObject)
+		{
+			$exportedCalls = $classObject->getAllExportedCalls();
+			OA_SymbolTableBuilder::_markAllCalls($registry, $exportedCalls);
+		}
 		
 		// Now delete all dead receivers ("sweep").
 		foreach ($this->functionObjects as $functionObject)

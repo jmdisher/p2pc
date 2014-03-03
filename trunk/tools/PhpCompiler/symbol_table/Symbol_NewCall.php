@@ -42,9 +42,18 @@ class OA_Symbol_NewCall implements OA_IFunctionCall
 	
 	public function getTargetsFromRegistry($registry)
 	{
+		$target = null;
 		$className = $this->receiverClassNameToken->getText();
-		$identifier = OA_FunctionRegistry::createNameForConstructor($className);
-		$target = $registry->resolveStaticReceiverForName($identifier);
+		while ((null === $target) && (null !== $className))
+		{
+			$identifier = OA_FunctionRegistry::createNameForConstructor($className);
+			$target = $registry->resolveStaticReceiverForName($identifier);
+			// If we failed to find the receiver, try the superclass.
+			if (null === $target)
+			{
+				$className = $registry->getSuperclassName($className);
+			}
+		}
 		return (null !== $target) ? array($target) : array();
 	}
 }

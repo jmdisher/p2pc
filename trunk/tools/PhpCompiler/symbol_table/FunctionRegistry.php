@@ -45,12 +45,14 @@ class OA_FunctionRegistry
 	
 	private $normalFunctionMap;
 	private $virtualFunctionArrayMap;
+	private $classRelationshipMap;
 	
 	
 	public function __construct()
 	{
 		$this->normalFunctionMap = array();
 		$this->virtualFunctionArrayMap = array();
+		$this->classRelationshipMap = array();
 	}
 	
 	// Called to register a statically-callable function.  The given name can only map to one function object.
@@ -80,6 +82,25 @@ class OA_FunctionRegistry
 	public function resolveVirtualReceiversForName($functionName)
 	{
 		return isset($this->virtualFunctionArrayMap[$functionName]) ? $this->virtualFunctionArrayMap[$functionName] : array();
+	}
+	
+	// Builds a relationship such that $child inherits from $parent.  This is used to resolve constructors since the
+	//  child need not override the parent and the caller should bind to the first implementation seen.
+	// NOTE:  $parent and $child are strings, within this context.
+	public function setClassRelationship($parent, $child)
+	{
+		$this->classRelationshipMap[$child] = $parent;
+	}
+	
+	// Returns the string name of the superclass of $childClassName (also a string) or null, if it doesn't have one.
+	public function getSuperclassName($childClassName)
+	{
+		$name = null;
+		if (isset($this->classRelationshipMap[$childClassName]))
+		{
+			$name = $this->classRelationshipMap[$childClassName];
+		}
+		return $name;
 	}
 }
 

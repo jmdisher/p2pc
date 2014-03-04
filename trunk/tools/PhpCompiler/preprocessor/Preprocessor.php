@@ -135,7 +135,7 @@ class OA_Preprocessor
 							// We did find the file, we haven't yet included it, and it isn't in our ignored list so we can
 							//  try to inline it.
 							list($preLines, $lines, $postLines) = $this->_loadFile($subFilePath);
-							if (null === $this->errror)
+							if (null === $this->error)
 							{
 								if (count($lines) > 0)
 								{

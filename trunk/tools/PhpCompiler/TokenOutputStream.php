@@ -52,6 +52,7 @@ class OA_TokenOutputStream
 		OA_LexerNames::kNew,
 		OA_LexerNames::kExtends,
 		OA_LexerNames::kImplements,
+		OA_LexerNames::kEcho,
 		OA_LexerNames::kInstanceOf,
 		
 		// Regex.

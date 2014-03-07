@@ -33,6 +33,8 @@ class OA_TokenOutputStream
 {
 	private static $spaceDelimitedTokens = array(
 		// Keywords.
+		OA_LexerNames::kIf,
+		OA_LexerNames::kElse,
 		OA_LexerNames::kCase,
 		OA_LexerNames::kTrue,
 		OA_LexerNames::kFalse,
@@ -115,6 +117,7 @@ class OA_TokenOutputStream
 	public function flush($stream)
 	{
 		fwrite($stream, $this->buffer);
+		fwrite($stream, "\n");
 		$this->buffer = null;
 	}
 }

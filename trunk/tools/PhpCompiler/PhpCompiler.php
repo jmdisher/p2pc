@@ -169,8 +169,10 @@ class OA_PhpCompiler
 			$lexer = new OA_Lexer($preprocessor);
 			$this->_strip($stream, $lexer);
 		}
-		else if (null !== $this->options->parserGrammarFilePath)
+		else if ($this->options->eliminateDeadCode || (null !== $this->options->symbolTableReportPath))
 		{
+			assert(null !== $this->options->parserGrammarFilePath);
+			
 			// Read the grammar file and produce the parser object.
 			$parser = OA_ParserBuilder::buildFromXmlFile($this->options->parserGrammarFilePath);
 			// We don't expect this to fail unless the grammar is invalid.
@@ -179,41 +181,41 @@ class OA_PhpCompiler
 			// Create the lexer from the preprocessor.
 			$lexer = new OA_Lexer($preprocessor);
 			
-			// See if we need a symbol table.
-			$shouldBuildSymbolTable = ($this->options->eliminateDeadCode || (null !== $this->options->symbolTableReportPath));
-			
 			// Run the parser.
 			$acceptedTree = $parser->parse($lexer);
 			if (null !== $acceptedTree)
 			{
-				if ($shouldBuildSymbolTable)
+				$symbolTableBuilder = new OA_SymbolTableBuilder();
+				$acceptedTree->visit($symbolTableBuilder);
+				// Handle dead code elimination.
+				if ($this->options->eliminateDeadCode)
 				{
-					$symbolTableBuilder = new OA_SymbolTableBuilder();
-					$acceptedTree->visit($symbolTableBuilder);
-					// Handle dead code elimination.
-					if ($this->options->eliminateDeadCode)
-					{
-						$symbolTableBuilder->performDeadCodeElimination();
-					}
-					// Handle the symbol report option.
-					if (null !== $this->options->symbolTableReportPath)
-					{
-						$tempName = $this->options->symbolTableReportPath . '.tmp';
-						$reportStream = fopen($tempName, 'w');
-						// This error is unrecoverable.
-						assert(FALSE !== $reportStream);
-						$symbolTableBuilder->writeReportToStream($reportStream);
-						fclose($reportStream);
-						$didRename = rename($tempName, $this->options->symbolTableReportPath);
-						// This error is unrecoverable.
-						assert($didRename);
-					}
+					$symbolTableBuilder->performDeadCodeElimination();
 				}
+				// Handle the symbol report option.
+				if (null !== $this->options->symbolTableReportPath)
+				{
+					$tempName = $this->options->symbolTableReportPath . '.tmp';
+					$reportStream = fopen($tempName, 'w');
+					// This error is unrecoverable.
+					assert(FALSE !== $reportStream);
+					$symbolTableBuilder->writeReportToStream($reportStream);
+					fclose($reportStream);
+					$didRename = rename($tempName, $this->options->symbolTableReportPath);
+					// This error is unrecoverable.
+					assert($didRename);
+				}
+				
 				// Finally, flush the tree to output.
 				$tokenStream = new OA_TokenOutputStream();
 				$outputVisitor = new OA_OutputVisitor($tokenStream);
 				$acceptedTree->visit($outputVisitor);
 				$tokenStream->flush($stream);
+			}
+			else
+			{
+				error_log("Failure in parser.\n");
+				exit(1);
 			}
 		}
 		else

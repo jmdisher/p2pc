@@ -116,7 +116,7 @@ class OA_PhpCompiler
 			$tempName = $outputFileName . '.tmp';
 			$stream = fopen($tempName, 'w');
 			// This error is unrecoverable.
-			assert(FALSE !== $stream);
+			assert(false !== $stream);
 		}
 		
 		// Start the preprocessor.
@@ -198,7 +198,7 @@ class OA_PhpCompiler
 					$tempName = $this->options->symbolTableReportPath . '.tmp';
 					$reportStream = fopen($tempName, 'w');
 					// This error is unrecoverable.
-					assert(FALSE !== $reportStream);
+					assert(false !== $reportStream);
 					$symbolTableBuilder->writeReportToStream($reportStream);
 					fclose($reportStream);
 					$didRename = rename($tempName, $this->options->symbolTableReportPath);

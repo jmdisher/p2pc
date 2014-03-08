@@ -68,7 +68,7 @@ class OA_Preprocessor
 		// This cannot be used this way.
 		assert(null !== $inputFilePath);
 		$realInputPath = realpath($inputFilePath);
-		assert(FALSE !== $realInputPath);
+		assert(false !== $realInputPath);
 		
 		// Set up the receiver ivar state.
 		$this->alreadyIncludedPathArray = array();
@@ -218,7 +218,7 @@ class OA_Preprocessor
 		// Load the initial file contents.
 		$lines = file($realPath);
 		// We don't expect to fail to read the file.
-		assert(FALSE !== $lines);
+		assert(false !== $lines);
 		// We want to make sure that there is exactly one PHP start and PHP end in this file.
 		$startCount = 0;
 		$endCount = 0;
@@ -278,22 +278,22 @@ class OA_Preprocessor
 	private function _getRealPath($fileName)
 	{
 		$realPath = realpath($fileName);
-		if (FALSE === $realPath)
+		if (false === $realPath)
 		{
 			$realPath = realpath($this->startingDirectory . DIRECTORY_SEPARATOR . $fileName);
-			if (FALSE === $realPath)
+			if (false === $realPath)
 			{
 				foreach($this->includePathArray as $path)
 				{
 					$realPath = realpath($path . DIRECTORY_SEPARATOR . $fileName);
-					if (FALSE !== $realPath)
+					if (false !== $realPath)
 					{
 						break;
 					}
 				}
 			}
 		}
-		return (FALSE !== $realPath) ? $realPath : null;
+		return (false !== $realPath) ? $realPath : null;
 	}
 }
 

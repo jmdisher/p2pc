@@ -60,7 +60,7 @@ if (2 === $argc)
 		$reducedStateNode->addAttribute('number', (string)$stateNode->attributes()->number);
 	}
 	$putResult = file_put_contents($outputPath, $reducedRoot->asXML());
-	assert(FALSE !== $putResult);
+	assert(false !== $putResult);
 	
 }
 else

@@ -39,11 +39,7 @@ class OA_LexerMaps
 		'case' => OA_LexerNames::kCase,
 		'default' => OA_LexerNames::kDefault,
 		'true' => OA_LexerNames::kTrue,
-		// XXX : Remove.
-		'TRUE' => OA_LexerNames::kTrue,
 		'false' => OA_LexerNames::kFalse,
-		// XXX : Remove.
-		'FALSE' => OA_LexerNames::kFalse,
 		'null' => OA_LexerNames::kNull,
 		'private' => OA_LexerNames::kPrivate,
 		'protected' => OA_LexerNames::kProtected,

@@ -27,7 +27,7 @@ class OA_LexerMaps
 {
 	// Note that keywords and other exact matches are kept in their own map to only be matched on success in order to
 	//  avoid enforcing an order in the list of regexes or doing redundant matches on every step.
-	public static $keywordMap = array(
+	public static $identifierMap = array(
 		// Keywords.
 		'while' => OA_LexerNames::kWhile,
 		'break' => OA_LexerNames::kBreak,
@@ -64,7 +64,9 @@ class OA_LexerMaps
 		'PATH_SEPARATOR' => OA_LexerNames::kPathSeparator,
 		'global' => OA_LexerNames::kGlobal,
 		'parent' => OA_LexerNames::kParent,
-		
+	);
+	
+	public static $nonIdentifierMap = array(
 		// Structure.
 		"\n" => OA_LexerNames::kNewLine,
 		'{' => OA_LexerNames::kOpenBrace,

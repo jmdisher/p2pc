@@ -59,10 +59,10 @@ class OA_Lexer
 	{
 		$this->preprocessor = $preprocessor;
 		// We want the keywords sorted so we check the longest ones first.
-		$keywords = array_keys(OA_LexerMaps::$keywordMap);
+		$nonIdentifiers = array_keys(OA_LexerMaps::$nonIdentifierMap);
 		//EXPORT OA_LexerMaps::lengthSort;
-		usort($keywords, 'OA_LexerMaps::lengthSort');
-		$this->sortedKeywordArray = $keywords;
+		usort($nonIdentifiers, 'OA_LexerMaps::lengthSort');
+		$this->sortedNonIdentifierArray = $nonIdentifiers;
 		
 		// Prime the buffer.
 		$this->_refreshBuffer();
@@ -158,6 +158,7 @@ class OA_Lexer
 				// This ordering is meant to ensure that things like "while" are identified as a keyword but things like
 				//  "whilenot" are not.
 				$tokenName = null;
+				$parsedIdentifier = null;
 				$textLength = 0;
 				switch ($prefix)
 				{
@@ -180,20 +181,21 @@ class OA_Lexer
 					default:
 						if (('_' === $prefix) || ctype_alpha($prefix))
 						{
-						list($tokenName, $textLength) = $this->_parseIdentifier(OA_LexerNames::kIdentifier, 0);
+							list($parsedIdentifier, $textLength) = $this->_parseIdentifier(OA_LexerNames::kIdentifier, 0);
 						}
 						else if (ctype_digit($prefix))
 						{
 							list($tokenName, $textLength) = $this->_matchNumber();
 						}
 				}
-				if (null !== $tokenName)
+				if (null !== $parsedIdentifier)
 				{
-					$tokenName = $this->_reduceRegexToken($tokenName, $textLength);
+					$tokenName = $this->_reduceParsedIdentifier($parsedIdentifier, $textLength);
+					assert(null !== $tokenName);
 				}
-				else
+				else if (null === $tokenName)
 				{
-					list($tokenName, $textLength) = $this->_getLongestKeywordToken();
+					list($tokenName, $textLength) = $this->_getLongestNonIdentifierToken();
 				}
 				
 				if (null !== $tokenName)
@@ -241,27 +243,27 @@ class OA_Lexer
 		return new OA_LexerToken($tokenName, $extracted, $this->fileName, $this->line);
 	}
 	
-	private function _reduceRegexToken($longestToken, $longestLength)
+	private function _reduceParsedIdentifier($longestToken, $longestLength)
 	{
 		$reducedToken = $longestToken;
 		$text = substr($this->buffer, 0, $longestLength);
-		if (isset(OA_LexerMaps::$keywordMap[$text]))
+		if (isset(OA_LexerMaps::$identifierMap[$text]))
 		{
-			$reducedToken = OA_LexerMaps::$keywordMap[$text];
+			$reducedToken = OA_LexerMaps::$identifierMap[$text];
 		}
 		return $reducedToken; 
 	}
 	
-	private function _getLongestKeywordToken()
+	private function _getLongestNonIdentifierToken()
 	{
 		$token = null;
 		$length = 0;
-		foreach ($this->sortedKeywordArray as $keyword)
+		foreach ($this->sortedNonIdentifierArray as $keyword)
 		{
 			if (0 === strpos($this->buffer, $keyword))
 			{
 				$length = strlen($keyword);
-				$token = OA_LexerMaps::$keywordMap[$keyword];
+				$token = OA_LexerMaps::$nonIdentifierMap[$keyword];
 				break;
 			}
 		}

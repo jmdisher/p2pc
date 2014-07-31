@@ -31,6 +31,11 @@
 //  example).
 class OA_TokenOutputStream
 {
+	// Note that the output mechanism is much faster if the entire output is buffered and flushed only once but it can
+	//  easily push some invocations into out-of-memory situations.
+	// 64 KiB = 64 * 1024.
+	const kBufferSize = 65536;
+	
 	private static $spaceDelimitedTokens = array(
 		// Keywords.
 		OA_LexerNames::kIf,
@@ -67,19 +72,25 @@ class OA_TokenOutputStream
 	);
 	
 	
+	private $stream;
 	private $buffer;
 	private $needsSpace;
 	
 	
 	// Creates an empty representation of the receiver.
-	public function __construct()
+	public function __construct($stream)
 	{
+		$this->stream = $stream;
 		$this->buffer = '';
 		$this->needsSpace = false;
 	}
 	
 	public function writeToken($leaf)
 	{
+		if (strlen($this->buffer) > OA_TokenOutputStream::kBufferSize)
+		{
+			$this->_flush();
+		}
 		$leafName = $leaf->getName();
 		$leafText = $leaf->getText();
 		if (OA_LexerNames::kSpecialComment === $leafName)
@@ -101,7 +112,7 @@ class OA_TokenOutputStream
 			if (OA_LexerNames::kSemiColon === $leafName)
 			{
 				// We will drop new lines after semi-colons so that error messages provided during the run will have
-				//  some hope of being decyphered.
+				//  some hope of being decypherred.
 				$this->buffer .= "\n";
 				$this->needsSpace = false;
 			}
@@ -114,11 +125,18 @@ class OA_TokenOutputStream
 	
 	// Called after the compilation operation is complete to flush the stream's internal buffer to an output file
 	//  stream.  Note that the receiver's behaviour is undefined on any calls made after this one.
-	public function flush($stream)
+	public function finish()
 	{
-		fwrite($stream, $this->buffer);
-		fwrite($stream, "\n");
+		$this->_flush();
+		fwrite($this->stream, "\n");
+		$this->stream = null;
 		$this->buffer = null;
+	}
+	
+	private function _flush()
+	{
+		fwrite($this->stream, $this->buffer);
+		$this->buffer = '';
 	}
 }
 

@@ -207,10 +207,10 @@ class OA_PhpCompiler
 				}
 				
 				// Finally, flush the tree to output.
-				$tokenStream = new OA_TokenOutputStream();
+				$tokenStream = new OA_TokenOutputStream($stream);
 				$outputVisitor = new OA_OutputVisitor($tokenStream);
 				$acceptedTree->visit($outputVisitor);
-				$tokenStream->flush($stream);
+				$tokenStream->finish();
 			}
 			else
 			{
@@ -246,7 +246,7 @@ class OA_PhpCompiler
 	
 	private function _strip($stream, $lexer)
 	{
-		$tokenStream = new OA_TokenOutputStream();
+		$tokenStream = new OA_TokenOutputStream($stream);
 		while (null !== ($token = $lexer->getNextToken()))
 		{
 			$name = $token->getName();
@@ -263,7 +263,7 @@ class OA_PhpCompiler
 					$tokenStream->writeToken($token);
 			}
 		}
-		$tokenStream->flush($stream);
+		$tokenStream->finish();
 		$error = $lexer->getError();
 		if (null !== $error)
 		{

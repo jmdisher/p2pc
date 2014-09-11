@@ -29,7 +29,6 @@ require_once('Symbol_GlobalCall.php');
 class OA_CallGlobalWalker implements OA_ITreeWalker
 {
 	const kIdentifier = 'IDENTIFIER';
-	const kSilentIdentifier = 'SILENT_IDENTIFIER';
 	
 	
 	private $functionNameToken;
@@ -59,9 +58,9 @@ class OA_CallGlobalWalker implements OA_ITreeWalker
 	public function visitLeaf($leaf)
 	{
 		// We are interested in the first identifier call we see, but nothing else.
-		//  (looking for "P_IDENTIFIER P_RARG_BRACKETS" but the underlying IDENTIFIER or SILENT_IDENTIFIER)
+		//  (looking for "P_IDENTIFIER P_RARG_BRACKETS" but the underlying IDENTIFIER)
 		$name = $leaf->getName();
-		if ((OA_CallGlobalWalker::kIdentifier === $name) || (OA_CallGlobalWalker::kSilentIdentifier === $name))
+		if (OA_CallGlobalWalker::kIdentifier === $name)
 		{
 			assert(null === $this->functionNameToken);
 			$this->functionNameToken = $leaf;

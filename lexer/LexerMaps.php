@@ -79,6 +79,7 @@ class OA_LexerMaps
 		'::' => OA_LexerNames::kColonColon,
 		',' => OA_LexerNames::kComma,
 		'->' => OA_LexerNames::kCall,
+		'@' => OA_LexerNames::kAt,
 		
 		// Operators.
 		'|' => OA_LexerNames::kBitOR,

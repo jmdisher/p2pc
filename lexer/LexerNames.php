@@ -74,6 +74,7 @@ class OA_LexerNames
 	const kColonColon = 'COLON_COLON';
 	const kComma = 'COMMA';
 	const kCall = 'CALL';
+	const kAt = 'AT';
 		
 	// Operators.
 	const kBitOR = 'BIT_OR';
@@ -114,7 +115,6 @@ class OA_LexerNames
 	
 	// Regex.
 	const kIdentifier = 'IDENTIFIER';
-	const kSilentIdentifier = 'SILENT_IDENTIFIER';
 	const kWhiteSpace = 'WHITE_SPACE';
 	const kFloatConst = 'FLOAT_CONST';
 	const kIntConst = 'INT_CONST';

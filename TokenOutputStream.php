@@ -64,7 +64,6 @@ class OA_TokenOutputStream
 		
 		// Regex.
 		OA_LexerNames::kIdentifier,
-		OA_LexerNames::kSilentIdentifier,
 		OA_LexerNames::kIntConst,
 		OA_LexerNames::kFloatConst,
 		OA_LexerNames::kVariable,

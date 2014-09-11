@@ -162,9 +162,6 @@ class OA_Lexer
 				$textLength = 0;
 				switch ($prefix)
 				{
-					case '@':
-						list($tokenName, $textLength) = $this->_parseIdentifier(OA_LexerNames::kSilentIdentifier, 1);
-					break;
 					case '$':
 						list($tokenName, $textLength) = $this->_parseIdentifier(OA_LexerNames::kVariable, 1);
 					break;

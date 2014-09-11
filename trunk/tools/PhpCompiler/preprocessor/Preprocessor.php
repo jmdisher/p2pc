@@ -140,9 +140,14 @@ class OA_Preprocessor
 								if (count($lines) > 0)
 								{
 									// Push our existing state onto the stack and assume these.
-									array_push($this->lineStack, $this->currentLines);
-									array_push($this->fileStack, $this->currentFileName);
-									array_push($this->lineNumberStack, $this->currentLineNumber);
+									// Note that we only push if there would be some data to return to (since we can't
+									//  return to an empty line array).
+									if (count($this->currentLines) > 0)
+									{
+										array_push($this->lineStack, $this->currentLines);
+										array_push($this->fileStack, $this->currentFileName);
+										array_push($this->lineNumberStack, $this->currentLineNumber);
+									}
 									
 									$this->currentLines = $lines;
 									$this->currentFileName = $subFilePath;
